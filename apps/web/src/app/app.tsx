@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppLayout } from '../components/layout/app-layout';
 import { authApi } from '../features/auth/api/auth-api';
 import { LoginPage } from '../features/auth/pages/login-page';
@@ -23,6 +23,7 @@ export function App() {
 }
 
 function AuthenticatedApp() {
+  const location = useLocation();
   const dispatch = useDispatch();
   const toast = useToast();
   const logoutIntent = useSelector((state: RootState) => state.app.logoutIntent);
@@ -50,7 +51,7 @@ function AuthenticatedApp() {
   }, [currentUser.isError, currentUser.isSuccess, dispatch, logoutIntent, toast]);
 
   if (currentUser.isPending) return <main className="min-vh-100 d-flex align-items-center justify-content-center bg-body-secondary">Loading CIAS Admin…</main>;
-  if (currentUser.isError) return <LoginPage />;
+  if (currentUser.isError) return location.pathname === '/' ? <LoginPage /> : <Navigate to="/" replace />;
 
   return <Routes><Route element={<AppLayout user={currentUser.data.user} />}><Route index element={<DashboardPage />} /><Route path="users" element={<UsersPage />} /><Route path="roles" element={<RolesPage />} /><Route path="login-history" element={<LoginHistoryPage />} /><Route path="profile" element={<ProfilePage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>;
 }

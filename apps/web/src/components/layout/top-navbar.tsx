@@ -16,7 +16,6 @@ export function TopNavbar({ user }: { user: Pick<CurrentUser, 'email' | 'name' |
     mutationFn: authApi.logout,
     onSuccess: () => {
       dispatch(setLogoutIntent(true));
-      toast.success('Signed out successfully.');
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
     },
     onError: (error) => toast.error(error.message),
