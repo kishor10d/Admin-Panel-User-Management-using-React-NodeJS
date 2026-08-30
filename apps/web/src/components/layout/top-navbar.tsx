@@ -3,16 +3,23 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authApi, type CurrentUser } from '../../features/auth/api/auth-api';
-import { setSidebarCollapsed, type RootState } from '../../app/store';
+import { setLogoutIntent, setSidebarCollapsed, type RootState } from '../../app/store';
+import { useToast } from '../../app/toast-provider';
 
 export function TopNavbar({ user }: { user: Pick<CurrentUser, 'email' | 'name' | 'roles'> }) {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const sidebarCollapsed = useSelector((state: RootState) => state.app.sidebarCollapsed);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const toast = useToast();
   const logout = useMutation({
     mutationFn: authApi.logout,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['auth', 'me'] }),
+    onSuccess: () => {
+      dispatch(setLogoutIntent(true));
+      toast.success('Signed out successfully.');
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   return (

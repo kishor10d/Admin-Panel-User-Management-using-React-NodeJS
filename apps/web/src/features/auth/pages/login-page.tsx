@@ -26,6 +26,7 @@ export function LoginPage() {
         <div className="card-body login-card-body">
           <p className="login-box-msg">Sign in to start your session</p>
           <form onSubmit={form.handleSubmit((values) => login.mutate(values))}>
+            {login.isError && <div className="alert alert-danger py-2" role="alert">{login.error.message}</div>}
             <div className="input-group mb-3">
               <input id="login-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" placeholder="Email" autoComplete="email" aria-label="Email" {...form.register('email')} />
               <div className="input-group-text"><span className="bi bi-envelope" /></div>
@@ -36,7 +37,6 @@ export function LoginPage() {
               <div className="input-group-text"><span className="bi bi-lock-fill" /></div>
               {form.formState.errors.password && <div className="invalid-feedback d-block">{form.formState.errors.password.message}</div>}
             </div>
-            {login.isError && <div className="alert alert-danger py-2" role="alert">{login.error.message}</div>}
             <div className="row">
               <div className="col-12"><button className="btn btn-primary w-100" type="submit" disabled={login.isPending}>{login.isPending ? 'Signing in…' : 'Sign In'}</button></div>
             </div>

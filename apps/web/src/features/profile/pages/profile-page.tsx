@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { authApi } from '../../auth/api/auth-api';
 import { ChangePasswordForm } from '../../auth/components/change-password-form';
+import { useToast } from '../../../app/toast-provider';
 
 const profileSchema = z.object({
   name: z.string().trim().max(128, 'Name must be 128 characters or fewer.'),
@@ -18,6 +19,7 @@ type ProfileTab = 'information' | 'password';
 export function ProfilePage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ProfileTab>('information');
+  const toast = useToast();
   const currentUser = useQuery({ queryKey: ['auth', 'me'], queryFn: authApi.me });
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -33,7 +35,9 @@ export function ProfilePage() {
     onSuccess: ({ user }) => {
       queryClient.setQueryData(['auth', 'me'], { user });
       form.reset(toFormValues(user));
+      toast.success('Profile updated successfully.');
     },
+    onError: (error) => toast.error(error.message),
   });
 
   if (currentUser.isPending) return <div className="card"><div className="card-body text-body-secondary">Loading profile…</div></div>;
@@ -94,8 +98,6 @@ export function ProfilePage() {
                     <label className="form-label" htmlFor="profile-role">Role</label>
                     <input id="profile-role" className="form-control" value={user.roles.join(', ') || 'No assigned roles'} disabled />
                   </div>
-                  {saveProfile.isError && <div className="col-12"><div className="alert alert-danger mb-0">{saveProfile.error.message}</div></div>}
-                  {saveProfile.isSuccess && <div className="col-12"><div className="alert alert-success mb-0">Profile updated successfully.</div></div>}
                   <div className="col-12">
                     <button className="btn btn-primary" type="submit" disabled={saveProfile.isPending}>{saveProfile.isPending ? 'Saving…' : 'Save changes'}</button>
                     <button className="btn btn-outline-secondary ms-1" type="button" onClick={() => form.reset(toFormValues(user))}>Cancel</button>
