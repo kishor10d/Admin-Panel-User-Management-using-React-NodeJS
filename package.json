@@ -1,0 +1,21 @@
+{
+  "name": "cias-react-nodejs",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev": "pnpm --parallel --stream --filter @cias/web --filter @cias/api dev",
+    "dev:web": "pnpm --filter @cias/web dev",
+    "dev:api": "pnpm --filter @cias/api dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "migration:run": "pnpm --filter @cias/api migration:run",
+    "migration:revert": "pnpm --filter @cias/api migration:revert",
+    "seed": "pnpm --filter @cias/api seed"
+  },
+  "devDependencies": {
+    "lru-cache": "^10.4.3",
+    "prettier": "^3.5.0"
+  }
+}

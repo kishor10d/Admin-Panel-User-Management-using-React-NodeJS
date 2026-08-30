@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Vite relies on esbuild's platform binary. Keep this explicit rather than
+# permitting dependency lifecycle scripts broadly.
+onlyBuiltDependencies:
+  - esbuild
+  - bcrypt
+
+overrides:
+  media-typer: 1.1.1
+allowBuilds:
+  bcrypt: true
+  esbuild: true
