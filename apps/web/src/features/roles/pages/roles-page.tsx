@@ -73,14 +73,16 @@ export function RolesPage() {
             <td className="text-body-secondary">{role.permissions.length} assigned</td>
             <td><span className={`badge text-bg-${role.isActive ? 'success' : 'secondary'}`}>{role.isActive ? 'Active' : 'Inactive'}</span></td>
             <td className="text-end text-nowrap">
-              <Link className="btn btn-outline-primary btn-sm me-2" to={`/roles/${role.id}`}>View</Link>
-              <button className="btn btn-outline-secondary btn-sm me-2" onClick={() => setEditing(role)}>Edit</button>
+              <div className="d-flex justify-content-end align-items-center gap-2">
+              <Link className="btn btn-outline-primary btn-sm" to={`/roles/${role.id}`} aria-label={`View ${role.name}`} title="View role"><i className="bi bi-eye" /></Link>
+              <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditing(role)} aria-label={`Edit ${role.name}`} title="Edit role"><i className="bi bi-pencil" /></button>
               {role.isActive && role.name !== 'System Administrator' && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => {
                 if (window.confirm(`Deactivate ${role.name}?`)) deactivate.mutate(role.id);
-              }}>Deactivate</button>}
+              }} aria-label={`Deactivate ${role.name}`} title="Deactivate role"><i className="bi bi-trash" /></button>}
               {!role.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => {
                 if (window.confirm(`Activate ${role.name}?`)) activate.mutate(role.id);
-              }}>Activate</button>}
+              }} aria-label={`Activate ${role.name}`} title="Activate role"><i className="bi bi-arrow-counterclockwise" /></button>}
+              </div>
             </td>
           </tr>)}</tbody>
         </table>}
