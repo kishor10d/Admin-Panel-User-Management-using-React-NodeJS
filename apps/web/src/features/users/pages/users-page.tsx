@@ -7,14 +7,22 @@ import { useToast } from '../../../app/toast-provider';
 import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '../../../lib/password-policy';
 import { usersApi, type ManagedUser } from '../api/users-api';
 
-const userSchema = z.object({
+type UserFormValues = { email: string; name: string; mobile: string; password: string; roleId: string };
+
+const updateUserSchema: z.ZodType<UserFormValues> = z.object({
   email: z.string().email('Enter a valid email address.'),
-  name: z.string().max(128).optional(),
-  mobile: z.string().max(20).optional(),
+  name: z.string().max(128),
+  mobile: z.string().max(20),
   password: z.string().refine((value) => !value || isValidPassword(value), PASSWORD_REQUIREMENTS_MESSAGE),
   roleId: z.string().uuid('Select a role.'),
 });
-type UserFormValues = z.infer<typeof userSchema>;
+const createUserSchema: z.ZodType<UserFormValues> = z.object({
+  email: z.string().trim().min(1, 'Enter an email address.').email('Enter a valid email address.'),
+  name: z.string().trim().min(1, 'Enter a name.').max(128),
+  mobile: z.string().trim().min(1, 'Enter a mobile number.').max(20),
+  password: z.string().min(1, 'Enter a password.').refine(isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE),
+  roleId: z.string().uuid('Select a role.'),
+});
 const emptyValues: UserFormValues = { email: '', name: '', mobile: '', password: '', roleId: '' };
 
 export function UsersPage() {
@@ -22,28 +30,115 @@ export function UsersPage() {
   const toast = useToast();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<ManagedUser | null>(null);
+  const [editing, setEditing] = useState<ManagedUser | 'new' | null>(null);
   const users = useQuery({ queryKey: ['users', page, search], queryFn: () => usersApi.list(page, search) });
   const roles = useQuery({ queryKey: ['roles'], queryFn: usersApi.roles });
-  const form = useForm<UserFormValues>({ resolver: zodResolver(userSchema), defaultValues: emptyValues });
+  const form = useForm<UserFormValues>({ resolver: zodResolver(editing === 'new' ? createUserSchema : updateUserSchema), defaultValues: emptyValues });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['users'] });
 
   useEffect(() => {
-    if (!editing) form.reset(emptyValues);
-    else form.reset({ email: editing.email, name: editing.name ?? '', mobile: editing.mobile ?? '', password: '', roleId: editing.roles[0]?.id ?? '' });
+    form.reset(editing && editing !== 'new'
+      ? { email: editing.email, name: editing.name ?? '', mobile: editing.mobile ?? '', password: '', roleId: editing.roles[0]?.id ?? '' }
+      : emptyValues);
   }, [editing, form]);
 
   const save = useMutation({
     mutationFn: (values: UserFormValues) => {
       const payload: Record<string, unknown> = { email: values.email, name: values.name, mobile: values.mobile, roleIds: [values.roleId] };
       if (values.password) payload.password = values.password;
-      return editing ? usersApi.update(editing.id, payload) : usersApi.create({ ...payload, password: values.password });
+      return editing === 'new' ? usersApi.create({ ...payload, password: values.password }) : usersApi.update(editing!.id, payload);
     },
-    onSuccess: () => { toast.success(editing ? 'User updated successfully.' : 'User created successfully.'); setEditing(null); refresh(); },
+    onSuccess: () => {
+      toast.success(editing === 'new' ? 'User created successfully.' : 'User updated successfully.');
+      setEditing(null);
+      refresh();
+    },
     onError: (error) => toast.error(error.message),
   });
-  const deactivate = useMutation({ mutationFn: usersApi.deactivate, onSuccess: (user) => { toast.success(`${user.email} was deactivated.`); refresh(); }, onError: (error) => toast.error(error.message) });
-  const onSearch = (value: string) => { setSearch(value); setPage(1); };
+  const deactivate = useMutation({
+    mutationFn: usersApi.deactivate,
+    onSuccess: (user) => {
+      toast.success(`${user.email} was deactivated.`);
+      refresh();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const onSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
-  return <><div className="d-flex justify-content-end mb-3"><button className="btn btn-primary" onClick={() => setEditing({ ...emptyValues, id: '', isActive: true, mustChangePassword: true, roles: [], createdAt: '', updatedAt: '' } as ManagedUser)}><i className="bi bi-person-plus-fill me-1" />Add user</button></div><section className="card"><div className="card-header"><div className="card-tools"><div className="input-group input-group-sm" style={{ width: 320 }}><input className="form-control" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search name, email, or mobile" /><span className="input-group-text"><i className="bi bi-search" /></span></div></div></div><div className="card-body table-responsive p-0">{users.isPending && <div className="p-3 text-body-secondary">Loading users…</div>}{users.isError && <div className="alert alert-danger m-3 mb-0">{users.error.message}</div>}{users.data && <table className="table table-hover text-nowrap mb-0"><thead><tr><th>Name</th><th>Email</th><th>Roles</th><th>Status</th><th className="text-end">Actions</th></tr></thead><tbody>{users.data.items.map((user) => <tr key={user.id}><td>{user.name || '—'}</td><td>{user.email}</td><td>{user.roles.map((role) => role.name).join(', ') || '—'}</td><td><span className={`badge text-bg-${user.isActive ? 'success' : 'secondary'}`}>{user.isActive ? 'Active' : 'Inactive'}</span></td><td className="text-end"><div className="d-flex justify-content-end align-items-center gap-2"><button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(user)} aria-label={`Edit ${user.email}`} title="Edit user"><i className="bi bi-pencil" /></button>{user.isActive && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => { if (window.confirm(`Deactivate ${user.email}?`)) deactivate.mutate(user.id); }} aria-label={`Deactivate ${user.email}`} title="Deactivate user"><i className="bi bi-trash" /></button>}</div></td></tr>)}</tbody></table>}</div>{users.data && <div className="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2"><span className="text-body-secondary small">{users.data.total} user(s)</span><nav aria-label="User pagination"><ul className="pagination pagination-sm mb-0"><li className={`page-item ${page <= 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page - 1)}>Previous</button></li><li className="page-item disabled"><span className="page-link">Page {page} of {users.data.totalPages}</span></li><li className={`page-item ${page >= users.data.totalPages ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page + 1)}>Next</button></li></ul></nav></div>}</section>{editing && <div className="modal fade show" style={{ display: 'block' }} role="dialog" aria-modal="true" aria-labelledby="user-modal-title"><div className="modal-dialog modal-dialog-centered"><form className="modal-content" onSubmit={form.handleSubmit((values) => save.mutate(values))}><div className="modal-header"><h2 className="modal-title fs-5" id="user-modal-title">{editing.id ? 'Edit user' : 'Add user'}</h2><button type="button" className="btn-close" onClick={() => setEditing(null)} aria-label="Close" /></div><div className="modal-body"><div className="mb-3"><label className="form-label" htmlFor="user-email">Email</label><input id="user-email" className="form-control" type="email" {...form.register('email')} /></div><div className="mb-3"><label className="form-label" htmlFor="user-name">Name</label><input id="user-name" className="form-control" {...form.register('name')} /></div><div className="mb-3"><label className="form-label" htmlFor="user-mobile">Mobile</label><input id="user-mobile" className="form-control" {...form.register('mobile')} /></div><div className="mb-3"><label className="form-label" htmlFor="user-password">{editing.id ? 'New password (optional)' : 'Password'}</label><input id="user-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" autoComplete="new-password" {...form.register('password')} />{form.formState.errors.password && <div className="invalid-feedback">{form.formState.errors.password.message}</div>}</div><div><label className="form-label" htmlFor="user-role">Role</label><select id="user-role" className={`form-select ${form.formState.errors.roleId ? 'is-invalid' : ''}`} {...form.register('roleId')}><option value="">Select a role</option>{roles.data?.roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select>{form.formState.errors.roleId && <div className="invalid-feedback">{form.formState.errors.roleId.message}</div>}</div></div><div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Cancel</button><button className="btn btn-primary" type="submit" disabled={save.isPending}>{save.isPending ? 'Saving…' : 'Save user'}</button></div></form></div></div>}{editing && <div className="modal-backdrop fade show" />}</>;
+  return <>
+    <div className="d-flex justify-content-end mb-3"><button className="btn btn-primary" onClick={() => setEditing('new')}><i className="bi bi-person-plus-fill me-1" />Add user</button></div>
+    <section className="card">
+      <div className="card-header"><div className="card-tools"><div className="input-group input-group-sm" style={{ width: 320 }}><input className="form-control" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search name, email, or mobile" /><span className="input-group-text"><i className="bi bi-search" /></span></div></div></div>
+      <div className="card-body table-responsive p-0">
+        {users.isPending && <div className="p-3 text-body-secondary">Loading users…</div>}
+        {users.isError && <div className="alert alert-danger m-3 mb-0">{users.error.message}</div>}
+        {users.data && <table className="table table-hover text-nowrap mb-0">
+          <thead><tr><th>Name</th><th>Email</th><th>Roles</th><th>Status</th><th className="text-end">Actions</th></tr></thead>
+          <tbody>{users.data.items.map((user) => <tr key={user.id}>
+            <td>{user.name || '—'}</td><td>{user.email}</td><td>{user.roles.map((role) => role.name).join(', ') || '—'}</td>
+            <td><span className={`badge text-bg-${user.isActive ? 'success' : 'secondary'}`}>{user.isActive ? 'Active' : 'Inactive'}</span></td>
+            <td className="text-end"><div className="d-flex justify-content-end align-items-center gap-2">
+              <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(user)} aria-label={`Edit ${user.email}`} title="Edit user"><i className="bi bi-pencil" /></button>
+              {user.isActive && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => { if (window.confirm(`Deactivate ${user.email}?`)) deactivate.mutate(user.id); }} aria-label={`Deactivate ${user.email}`} title="Deactivate user"><i className="bi bi-trash" /></button>}
+            </div></td>
+          </tr>)}</tbody>
+        </table>}
+      </div>
+      {users.data && <div className="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2"><span className="text-body-secondary small">{users.data.total} user(s)</span><nav aria-label="User pagination"><ul className="pagination pagination-sm mb-0"><li className={`page-item ${page <= 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page - 1)}>Previous</button></li><li className="page-item disabled"><span className="page-link">Page {page} of {users.data.totalPages}</span></li><li className={`page-item ${page >= users.data.totalPages ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page + 1)}>Next</button></li></ul></nav></div>}
+    </section>
+    {editing && <UserModal editing={editing} form={form} roles={roles.data?.roles ?? []} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
+  </>;
+}
+
+function UserModal({ editing, form, roles, saving, onClose, onSave }: {
+  editing: ManagedUser | 'new';
+  form: ReturnType<typeof useForm<UserFormValues>>;
+  roles: Array<{ id: string; name: string }>;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (values: UserFormValues) => void;
+}) {
+  return <>
+    <div className="modal fade show" style={{ display: 'block' }} role="dialog" aria-modal="true" aria-labelledby="user-modal-title">
+      <div className="modal-dialog modal-dialog-centered">
+        <form className="modal-content" onSubmit={form.handleSubmit(onSave)}>
+          <div className="modal-header"><h2 className="modal-title fs-5" id="user-modal-title">{editing === 'new' ? 'Add user' : 'Edit user'}</h2><button type="button" className="btn-close" onClick={onClose} aria-label="Close" /></div>
+          <div className="modal-body">
+            <div className="row g-3">
+              <div className="col-12">
+                <label className="form-label" htmlFor="user-email">Email</label>
+                <input id="user-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" {...form.register('email')} />
+                {form.formState.errors.email && <div className="invalid-feedback">{form.formState.errors.email.message}</div>}
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="user-name">Name</label>
+                <input id="user-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} {...form.register('name')} />
+                {form.formState.errors.name && <div className="invalid-feedback">{form.formState.errors.name.message}</div>}
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="user-mobile">Mobile</label>
+                <input id="user-mobile" className={`form-control ${form.formState.errors.mobile ? 'is-invalid' : ''}`} {...form.register('mobile')} />
+                {form.formState.errors.mobile && <div className="invalid-feedback">{form.formState.errors.mobile.message}</div>}
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="user-password">{editing === 'new' ? 'Password' : 'New password (optional)'}</label>
+                <input id="user-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" autoComplete="new-password" {...form.register('password')} />
+                {form.formState.errors.password && <div className="invalid-feedback">{form.formState.errors.password.message}</div>}
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="user-role">Role</label>
+                <select id="user-role" className={`form-select ${form.formState.errors.roleId ? 'is-invalid' : ''}`} {...form.register('roleId')}><option value="">Select a role</option>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select>
+                {form.formState.errors.roleId && <div className="invalid-feedback">{form.formState.errors.roleId.message}</div>}
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save user'}</button></div>
+        </form>
+      </div>
+    </div>
+    <div className="modal-backdrop fade show" />
+  </>;
 }
