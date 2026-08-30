@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,6 +7,7 @@ import { createHash, randomBytes } from 'crypto';
 import { In, IsNull, Repository } from 'typeorm';
 import { LoginEvent, PasswordResetToken, Permission, Role, RolePermission, User, UserRole } from '../database/entities';
 import type { AuthUser, JwtPayload } from './auth-user.type';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -54,6 +55,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
+      mobile: user.mobile,
       roles: roles.map((role) => role.name),
       permissions: permissions.map((permission) => permission.key),
     };
@@ -74,6 +76,23 @@ export class AuthService {
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     user.mustChangePassword = false;
     await this.users.save(user);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<AuthUser> {
+    const user = await this.users.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+
+    if (dto.email !== undefined) {
+      const email = dto.email.trim().toLowerCase();
+      const existing = await this.users.findOne({ where: { email } });
+      if (existing && existing.id !== user.id) throw new ConflictException('A user with this email already exists.');
+      user.email = email;
+    }
+    if (dto.name !== undefined) user.name = dto.name.trim() || null;
+    if (dto.mobile !== undefined) user.mobile = dto.mobile.trim() || null;
+
+    await this.users.save(user);
+    return this.getCurrentUser(user.id);
   }
 
   async requestPasswordReset(email: string) {

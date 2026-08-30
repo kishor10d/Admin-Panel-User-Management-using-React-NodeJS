@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AccessTokenGuard, type AuthenticatedRequest } from './access-token.guard';
 
 const accessCookieName = 'access_token';
@@ -36,6 +37,12 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   getCurrentUser(@Req() request: AuthenticatedRequest) {
     return { user: request.currentUser };
+  }
+
+  @Patch('profile')
+  @UseGuards(AccessTokenGuard)
+  async updateProfile(@Req() request: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
+    return { user: await this.authService.updateProfile(request.currentUser!.id, dto) };
   }
 
   @Post('change-password')

@@ -18,7 +18,6 @@ export const navigationSections: Array<{ label: string; items: NavigationItem[] 
     label: 'Security',
     items: [
       { to: '/login-history', label: 'Login history', icon: 'bi-clock-history' },
-      { to: '/change-password', label: 'Change password', icon: 'bi-key-fill' },
     ],
   },
 ];
@@ -28,6 +27,5 @@ export const pageTitles: Record<string, string> = {
   '/users': 'Users',
   '/roles': 'Roles & permissions',
   '/login-history': 'Login history',
-  '/change-password': 'Change password',
   '/profile': 'Profile',
 };

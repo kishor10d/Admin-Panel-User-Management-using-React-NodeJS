@@ -146,8 +146,9 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added change-password, forgot-password, and reset-password API flows.
 - [x] Added standalone public routes for `/forgot-password` and `/reset-password`.
 - [x] Added an AdminLTE-style authenticated user menu with profile and sign-out actions, plus a protected profile screen.
+- [x] Added authenticated self-profile updates for name, email, and mobile.
 - [x] Added one-hour hashed reset tokens and development-only reset-link output.
-- [x] Added React change-password, forgot-password, and reset-password screens.
+- [x] Added React forgot-password and reset-password screens, with authenticated password changes available from the Profile page.
 - [x] Fixed environment loading so API runtime and TypeORM migrations use `apps/api/.env`.
 - [x] Fixed local dependency compatibility issues affecting TypeORM and Express request parsing.
 - [x] Verified the project builds successfully and login validation returns a normal `400` response instead of a `500` error.

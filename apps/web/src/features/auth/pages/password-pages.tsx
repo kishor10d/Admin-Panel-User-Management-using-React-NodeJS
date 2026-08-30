@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Link, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { authApi } from '../api/auth-api';
 
 const passwordSchema = z.object({ password: z.string().min(12, 'Use at least 12 characters.') });
-const changeSchema = passwordSchema.extend({ currentPassword: z.string().min(12, 'Enter your current password.'), confirmPassword: z.string() }).refine((value) => value.password === value.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });
 const resetSchema = passwordSchema.extend({ confirmPassword: z.string() }).refine((value) => value.password === value.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });
 
 export function ForgotPasswordPage() {
@@ -46,11 +45,3 @@ export function ResetPasswordPage() {
     </div>
   </main>;
 }
-
-export function ChangePasswordPage() {
-  const form = useForm<z.infer<typeof changeSchema>>({ resolver: zodResolver(changeSchema) });
-  const submit = useMutation({ mutationFn: ({ currentPassword, password }: z.infer<typeof changeSchema>) => authApi.changePassword(currentPassword, password), onSuccess: () => form.reset() });
-  return <div className="card card-outline card-primary" style={{ maxWidth: 560 }}><div className="card-body"><form onSubmit={form.handleSubmit((values) => submit.mutate(values))}><PasswordField id="current-password" label="Current password" error={form.formState.errors.currentPassword?.message} autoComplete="current-password" registration={form.register('currentPassword')} /><PasswordField id="new-password" label="New password" error={form.formState.errors.password?.message} registration={form.register('password')} /><PasswordField id="confirm-new-password" label="Confirm new password" error={form.formState.errors.confirmPassword?.message} registration={form.register('confirmPassword')} />{submit.isError && <div className="alert alert-danger py-2">Current password is incorrect or the request could not be completed.</div>}{submit.isSuccess && <div className="alert alert-success py-2">Password updated successfully.</div>}<div className="text-end"><button className="btn btn-primary" type="submit" disabled={submit.isPending}>{submit.isPending ? 'Updating…' : 'Update password'}</button></div></form></div></div>;
-}
-
-function PasswordField({ id, label, error, registration, autoComplete = 'new-password' }: { id: string; label: string; error?: string; registration: UseFormRegisterReturn; autoComplete?: string }) { return <div className="mb-3"><label className="form-label" htmlFor={id}>{label}</label><input id={id} className={`form-control ${error ? 'is-invalid' : ''}`} type="password" autoComplete={autoComplete} {...registration} />{error && <div className="invalid-feedback">{error}</div>}</div>; }

@@ -1,12 +1,116 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { authApi } from '../../auth/api/auth-api';
+import { ChangePasswordForm } from '../../auth/components/change-password-form';
+
+const profileSchema = z.object({
+  name: z.string().trim().max(128, 'Name must be 128 characters or fewer.'),
+  email: z.string().email('Enter a valid email address.'),
+  mobile: z.string().max(20, 'Mobile must be 20 characters or fewer.'),
+});
+
+type ProfileValues = z.infer<typeof profileSchema>;
+type ProfileTab = 'information' | 'password';
 
 export function ProfilePage() {
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<ProfileTab>('information');
   const currentUser = useQuery({ queryKey: ['auth', 'me'], queryFn: authApi.me });
+  const form = useForm<ProfileValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: { name: '', email: '', mobile: '' },
+  });
+
+  useEffect(() => {
+    if (currentUser.data) form.reset(toFormValues(currentUser.data.user));
+  }, [currentUser.data, form]);
+
+  const saveProfile = useMutation({
+    mutationFn: (values: ProfileValues) => authApi.updateProfile(values),
+    onSuccess: ({ user }) => {
+      queryClient.setQueryData(['auth', 'me'], { user });
+      form.reset(toFormValues(user));
+    },
+  });
+
   if (currentUser.isPending) return <div className="card"><div className="card-body text-body-secondary">Loading profile…</div></div>;
   if (currentUser.isError) return <div className="alert alert-danger">Unable to load your profile.</div>;
 
   const { user } = currentUser.data;
-  return <div className="row"><div className="col-md-8 col-lg-6"><section className="card card-outline card-primary"><div className="card-header"><h3 className="card-title">Account information</h3></div><div className="card-body"><div className="text-center mb-4"><i className="bi bi-person-circle display-3 text-body-secondary" aria-hidden="true" /><h2 className="h4 mt-2 mb-1">{user.name ?? user.email}</h2><p className="text-body-secondary mb-0">{user.email}</p></div><dl className="row mb-0"><dt className="col-sm-4">Name</dt><dd className="col-sm-8">{user.name ?? 'Not provided'}</dd><dt className="col-sm-4">Email</dt><dd className="col-sm-8">{user.email}</dd><dt className="col-sm-4">Roles</dt><dd className="col-sm-8 d-flex flex-wrap gap-1">{user.roles.length ? user.roles.map((role) => <span className="badge text-bg-secondary" key={role}>{role}</span>) : 'No assigned roles'}</dd></dl></div><div className="card-footer text-end"><Link className="btn btn-primary" to="/change-password"><i className="bi bi-key-fill me-1" />Change password</Link></div></section></div></div>;
+  const setTab = (tab: ProfileTab) => setActiveTab(tab);
+
+  return (
+    <div className="row">
+      <div className="col-md-4">
+        <section className="card card-primary card-outline mb-4">
+          <div className="card-body box-profile">
+            <div className="text-center"><i className="bi bi-person-circle display-1 text-body-secondary" aria-hidden="true" /></div>
+            <h3 className="profile-username text-center">{user.name ?? user.email}</h3>
+            <p className="text-muted text-center">{user.roles.join(', ') || 'Administrator'}</p>
+            <ul className="list-group list-group-unbordered mb-3">
+              <li className="list-group-item"><b>Email</b><span className="float-end text-break text-end">{user.email}</span></li>
+              <li className="list-group-item"><b>Mobile</b><span className="float-end">{user.mobile ?? 'Not provided'}</span></li>
+              <li className="list-group-item"><b>Roles</b><span className="float-end text-end">{user.roles.join(', ') || 'None'}</span></li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <div className="col-md-8">
+        <section className="card">
+          <div className="card-header p-0 border-bottom-0">
+            <ul className="nav nav-tabs" role="tablist">
+              <li className="nav-item" role="presentation">
+                <button className={`nav-link ${activeTab === 'information' ? 'active' : ''}`} id="information-tab" type="button" role="tab" aria-controls="information" aria-selected={activeTab === 'information'} onClick={() => setTab('information')}>Admin Information</button>
+              </li>
+              <li className="nav-item" role="presentation">
+                <button className={`nav-link ${activeTab === 'password' ? 'active' : ''}`} id="password-tab" type="button" role="tab" aria-controls="password" aria-selected={activeTab === 'password'} onClick={() => setTab('password')}>Change Password</button>
+              </li>
+            </ul>
+          </div>
+          <div className="card-body">
+            <div className="tab-content">
+              {activeTab === 'information' && <div className="tab-pane fade show active" id="information" role="tabpanel" aria-labelledby="information-tab">
+                <form className="row g-3" onSubmit={form.handleSubmit((values) => saveProfile.mutate(values))}>
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="profile-name">Full name</label>
+                    <input id="profile-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} {...form.register('name')} />
+                    {form.formState.errors.name && <div className="invalid-feedback">{form.formState.errors.name.message}</div>}
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="profile-email">Email</label>
+                    <input id="profile-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" autoComplete="email" {...form.register('email')} />
+                    {form.formState.errors.email && <div className="invalid-feedback">{form.formState.errors.email.message}</div>}
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="profile-mobile">Mobile</label>
+                    <input id="profile-mobile" className={`form-control ${form.formState.errors.mobile ? 'is-invalid' : ''}`} autoComplete="tel" {...form.register('mobile')} />
+                    {form.formState.errors.mobile && <div className="invalid-feedback">{form.formState.errors.mobile.message}</div>}
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label" htmlFor="profile-role">Role</label>
+                    <input id="profile-role" className="form-control" value={user.roles.join(', ') || 'No assigned roles'} disabled />
+                  </div>
+                  {saveProfile.isError && <div className="col-12"><div className="alert alert-danger mb-0">{saveProfile.error.message}</div></div>}
+                  {saveProfile.isSuccess && <div className="col-12"><div className="alert alert-success mb-0">Profile updated successfully.</div></div>}
+                  <div className="col-12">
+                    <button className="btn btn-primary" type="submit" disabled={saveProfile.isPending}>{saveProfile.isPending ? 'Saving…' : 'Save changes'}</button>
+                    <button className="btn btn-outline-secondary ms-1" type="button" onClick={() => form.reset(toFormValues(user))}>Cancel</button>
+                  </div>
+                </form>
+              </div>}
+              {activeTab === 'password' && <div className="tab-pane fade show active" id="password" role="tabpanel" aria-labelledby="password-tab"><ChangePasswordForm /></div>}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function toFormValues(user: Awaited<ReturnType<typeof authApi.me>>['user']): ProfileValues {
+  return { name: user.name ?? '', email: user.email, mobile: user.mobile ?? '' };
 }
