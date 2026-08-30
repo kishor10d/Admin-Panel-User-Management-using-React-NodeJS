@@ -29,4 +29,5 @@ export const pageTitles: Record<string, string> = {
   '/roles': 'Roles & permissions',
   '/login-history': 'Login history',
   '/change-password': 'Change password',
+  '/profile': 'Profile',
 };
