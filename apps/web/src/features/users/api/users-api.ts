@@ -8,7 +8,7 @@ export interface ManagedUser {
 }
 export interface UsersPageResponse { items: ManagedUser[]; page: number; limit: number; total: number; totalPages: number; }
 
-const json = (body: Record<string, unknown>): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const json = (data: Record<string, unknown>) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, data });
 
 export const usersApi = {
   list: (page: number, search: string) => apiRequest<UsersPageResponse>(`/users?${createQueryString({ page, limit: 20, search })}`),

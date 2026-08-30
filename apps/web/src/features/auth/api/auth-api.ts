@@ -8,10 +8,10 @@ export interface CurrentUser {
   permissions: string[];
 }
 
-const json = (body: unknown): RequestInit => ({
+const json = (data: unknown) => ({
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body),
+  data,
 });
 
 export const authApi = {

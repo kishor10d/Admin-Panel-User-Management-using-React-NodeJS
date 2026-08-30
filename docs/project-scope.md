@@ -15,6 +15,7 @@ The legacy application remains a functional reference only. Its PHP code and `sc
 | API | Node.js, TypeScript, NestJS |
 | Database | MySQL and TypeORM migrations |
 | Server/API state | TanStack Query |
+| HTTP client | Axios instance with cookie support and normalized errors |
 | Global client state | Redux Toolkit |
 | Forms | React Hook Form and Zod |
 | Authentication | JWT stored in secure HTTP-only cookies |
@@ -125,6 +126,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added React/Vite, AdminLTE styling, Redux Toolkit, TanStack Query, React Hook Form, and Zod.
 - [x] Rebuilt the application shell around the AdminLTE v4 layout: header navbar, branded sidebar, content header, dashboard small boxes, cards, and footer.
 - [x] Refactored the web app into feature-focused modules with reusable layout components, shared providers/state, centralized API requests, and separated global styling.
+- [x] Added Axios as the shared HTTP client with secure-cookie support, a request timeout, and normalized API errors.
 - [x] Added the NestJS API, MySQL/TypeORM configuration, and health endpoint.
 - [x] Added the TypeORM migration framework and applied the initial migration to the development database.
 - [x] Added normalized roles, permissions, user roles, password-reset tokens, and login-event data models.

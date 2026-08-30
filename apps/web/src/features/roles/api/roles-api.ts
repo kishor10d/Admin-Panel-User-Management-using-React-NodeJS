@@ -6,7 +6,7 @@ export interface ManagedRole {
   permissions: PermissionItem[]; createdAt: string; updatedAt: string;
 }
 
-const json = (body: Record<string, unknown>): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const json = (data: Record<string, unknown>) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, data });
 
 export const rolesApi = {
   list: () => apiRequest<{ roles: ManagedRole[] }>('/roles?includeInactive=true'),

@@ -1,3 +1,5 @@
+import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
+
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
     super(message);
@@ -7,21 +9,21 @@ export class ApiError extends Error {
 
 type ApiErrorBody = { message?: string | string[] };
 
-export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`/api${path}`, {
-    credentials: 'include',
-    ...options,
-  });
+export const httpClient = axios.create({
+  baseURL: '/api',
+  withCredentials: true,
+  timeout: 15_000,
+  headers: { Accept: 'application/json' },
+});
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => null) as ApiErrorBody | null;
-    const message = Array.isArray(body?.message)
-      ? body.message.join(' ')
-      : body?.message ?? defaultErrorMessage(response.status);
-    throw new ApiError(message, response.status);
-  }
+httpClient.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => Promise.reject(normalizeApiError(error)),
+);
 
-  return response.status === 204 ? undefined as T : response.json() as Promise<T>;
+export async function apiRequest<T>(path: string, config?: AxiosRequestConfig): Promise<T> {
+  const response = await httpClient.request<T>({ url: path, ...config });
+  return response.data;
 }
 
 export function createQueryString(values: Record<string, string | number | boolean | undefined>) {
@@ -36,4 +38,19 @@ function defaultErrorMessage(status: number) {
   if (status === 401) return 'Your session has expired. Please sign in again.';
   if (status === 403) return 'You do not have permission to perform this action.';
   return 'Something went wrong. Please try again.';
+}
+
+function normalizeApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+
+  if (error instanceof AxiosError) {
+    const status = error.response?.status ?? 0;
+    const body = error.response?.data as ApiErrorBody | undefined;
+    const message = Array.isArray(body?.message)
+      ? body.message.join(' ')
+      : body?.message ?? (status ? defaultErrorMessage(status) : 'Unable to reach the API. Please try again.');
+    return new ApiError(message, status);
+  }
+
+  return new ApiError('Something went wrong. Please try again.', 0);
 }
