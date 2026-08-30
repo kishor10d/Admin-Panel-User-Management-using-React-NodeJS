@@ -3,14 +3,15 @@ import * as bcrypt from 'bcrypt';
 import dataSource from '../data-source';
 import { Permission, Role, RolePermission, User, UserRole } from '../entities';
 import { DEFAULT_PERMISSIONS } from '../../auth/permissions';
+import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '../../common/password-policy';
 
 async function seed() {
   if (process.env.DATABASE_ENABLED !== 'true') {
     throw new Error('Set DATABASE_ENABLED=true in apps/api/.env before seeding a database.');
   }
   const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword || adminPassword.length < 12) {
-    throw new Error('Set ADMIN_PASSWORD to a unique password with at least 12 characters in apps/api/.env.');
+  if (!adminPassword || !isValidPassword(adminPassword)) {
+    throw new Error(`Set ADMIN_PASSWORD in apps/api/.env. ${PASSWORD_REQUIREMENTS_MESSAGE}`);
   }
 
   await dataSource.initialize();

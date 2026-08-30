@@ -4,10 +4,11 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { authApi } from '../api/auth-api';
+import { passwordSchema } from '../../../lib/password-policy';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
-  password: z.string().min(8, 'Password must be at least 8 characters.'),
+  password: passwordSchema,
 });
 type LoginValues = z.infer<typeof loginSchema>;
 

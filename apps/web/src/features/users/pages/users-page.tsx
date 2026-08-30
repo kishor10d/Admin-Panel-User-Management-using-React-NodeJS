@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
+import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '../../../lib/password-policy';
 import { usersApi, type ManagedUser } from '../api/users-api';
 
 const userSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
   name: z.string().max(128).optional(),
   mobile: z.string().max(20).optional(),
-  password: z.string().refine((value) => !value || value.length >= 12, 'Use at least 12 characters.'),
+  password: z.string().refine((value) => !value || isValidPassword(value), PASSWORD_REQUIREMENTS_MESSAGE),
   roleId: z.string().uuid('Select a role.'),
 });
 type UserFormValues = z.infer<typeof userSchema>;

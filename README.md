@@ -38,7 +38,7 @@ pnpm migration:run
 
 ## First administrator
 
-After the initial migration, add a unique `JWT_ACCESS_SECRET` and an `ADMIN_PASSWORD` of at least 12 characters to `apps/api/.env`. Then run:
+After the initial migration, add a unique `JWT_ACCESS_SECRET` and an `ADMIN_PASSWORD` with at least 8 characters, including a letter, number, and special character, to `apps/api/.env`. Then run:
 
 ```bash
 pnpm seed

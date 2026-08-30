@@ -4,9 +4,9 @@ import { useForm } from 'react-hook-form';
 import { Link, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { authApi } from '../api/auth-api';
+import { passwordSchema } from '../../../lib/password-policy';
 
-const passwordSchema = z.object({ password: z.string().min(12, 'Use at least 12 characters.') });
-const resetSchema = passwordSchema.extend({ confirmPassword: z.string() }).refine((value) => value.password === value.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });
+const resetSchema = z.object({ password: passwordSchema, confirmPassword: z.string() }).refine((value) => value.password === value.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });
 
 export function ForgotPasswordPage() {
   const form = useForm<{ email: string }>({ resolver: zodResolver(z.object({ email: z.string().email('Enter a valid email address.') })) });
