@@ -1,7 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { HealthResponse } from '@cias/shared-types';
+import { Link, NavLink, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { authApi } from './auth';
 import { LoginPage } from './login-page';
+import { RolesPage } from './roles-page';
+import { UsersPage } from './users-page';
 
 async function getHealth(): Promise<HealthResponse> {
   const response = await fetch('/api/health', { credentials: 'include' });
@@ -16,19 +19,24 @@ export function App() {
   if (currentUser.isPending) return <main className="loading-screen">Loading CIAS Admin…</main>;
   if (currentUser.isError) return <LoginPage />;
 
+  return <Routes><Route element={<AdminLayout user={currentUser.data.user} />}><Route index element={<Dashboard health={health} />} /><Route path="users" element={<UsersPage />} /><Route path="roles" element={<RolesPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>;
+}
+
+function AdminLayout({ user }: { user: { email: string; name: string | null } }) {
+  const queryClient = useQueryClient();
+  const logout = useMutation({ mutationFn: authApi.logout, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['auth', 'me'] }) });
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">CIAS Admin</div>
-        <nav aria-label="Primary navigation">
-          <a className="active" href="#dashboard">Dashboard</a>
-          <a href="#users">Users</a>
-          <a href="#roles">Roles & permissions</a>
-          <a href="#login-history">Login history</a>
-        </nav>
-      </aside>
-      <section className="content">
-        <header><h1>Dashboard</h1><span>Signed in as {currentUser.data.user.name ?? currentUser.data.user.email}</span></header>
+      <aside className="sidebar"><Link className="brand" to="/">CIAS Admin</Link><nav aria-label="Primary navigation"><NavLink end to="/">Dashboard</NavLink><NavLink to="/users">Users</NavLink><NavLink to="/roles">Roles & permissions</NavLink><a href="#login-history">Login history</a></nav></aside>
+      <section className="content"><header><div><h1>Administration</h1><span>Signed in as {user.name ?? user.email}</span></div><button className="logout-button" onClick={() => logout.mutate()} disabled={logout.isPending}>Sign out</button></header><Outlet /></section>
+    </main>
+  );
+}
+
+function Dashboard({ health }: { health: ReturnType<typeof useQuery<HealthResponse>> }) {
+  return (
+    <>
+      <div className="page-heading"><div><h1>Dashboard</h1><p>React + NestJS administration foundation</p></div></div>
         <div className="status-card">
           <h2>API status</h2>
           {health.isPending && <p>Connecting to API…</p>}
@@ -39,7 +47,6 @@ export function App() {
           <h2>Ready for development</h2>
           <p>The base workspace, API health check, client state, server-state cache, and database migration foundation are in place.</p>
         </div>
-      </section>
-    </main>
+    </>
   );
 }
