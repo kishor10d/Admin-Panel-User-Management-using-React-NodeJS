@@ -33,6 +33,22 @@ docs/
 schema.sql              Legacy CodeIgniter schema reference
 ```
 
+The web application is organized by responsibility rather than by a single flat `src` folder:
+
+```text
+apps/web/src/
+  app/                  Application root, providers, Redux store
+  components/layout/    Reusable app shell: navbar, sidebar, header, footer
+  features/             Feature-owned pages and API modules
+    auth/
+    dashboard/
+    users/
+    roles/
+    login-history/
+  lib/                  Shared API client and Query Client
+  styles/               Global and AdminLTE-specific styling
+```
+
 ## Database approach
 
 The new project does not import `schema.sql` as its source of truth. It uses versioned TypeORM migrations.
@@ -108,6 +124,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Created the pnpm workspace with `apps/web`, `apps/api`, and `packages/shared-types`.
 - [x] Added React/Vite, AdminLTE styling, Redux Toolkit, TanStack Query, React Hook Form, and Zod.
 - [x] Rebuilt the application shell around the AdminLTE v4 layout: header navbar, branded sidebar, content header, dashboard small boxes, cards, and footer.
+- [x] Refactored the web app into feature-focused modules with reusable layout components, shared providers/state, centralized API requests, and separated global styling.
 - [x] Added the NestJS API, MySQL/TypeORM configuration, and health endpoint.
 - [x] Added the TypeORM migration framework and applied the initial migration to the development database.
 - [x] Added normalized roles, permissions, user roles, password-reset tokens, and login-event data models.
@@ -148,8 +165,8 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 
 ### Application foundation
 
-- [ ] Add React routing, protected-route handling, navigation state, and a logout action.
 - [ ] Move shared API DTOs and permission constants into a compiled shared package where practical.
+- [ ] Add reusable UI primitives for data tables, dialogs, form fields, status badges, and empty/loading states as more features are built.
 - [ ] Add standard API error responses, request logging, and structured audit events.
 - [ ] Add automated API unit/integration tests and React component tests.
 - [ ] Add linting, formatting, pre-commit checks, and CI workflow.
@@ -164,11 +181,10 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 
 ## Immediate next step
 
-Set `JWT_ACCESS_SECRET`, `ADMIN_EMAIL`, and a 12+ character `ADMIN_PASSWORD` in `apps/api/.env`, then run:
+Run the seeded application through the browser and test the core user flows:
 
 ```powershell
-pnpm seed
 pnpm dev
 ```
 
-After a successful login, proceed with the protected user-management API and screen implementation.
+Then validate login, user administration, role permissions, password reset, and login-history filtering. The next implementation pass should extract common table, dialog, status-badge, and form controls as the UI expands.

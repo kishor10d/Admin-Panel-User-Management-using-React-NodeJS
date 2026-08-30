@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Link, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
-import { authApi } from './auth';
+import { authApi } from '../api/auth-api';
 
 const passwordSchema = z.object({ password: z.string().min(12, 'Use at least 12 characters.') });
 const changeSchema = passwordSchema.extend({ currentPassword: z.string().min(12, 'Enter your current password.'), confirmPassword: z.string() }).refine((value) => value.password === value.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match.' });

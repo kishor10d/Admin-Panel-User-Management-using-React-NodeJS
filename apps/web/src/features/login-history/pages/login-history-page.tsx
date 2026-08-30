@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { getLoginHistory } from './login-history';
+import { getLoginHistory } from '../api/login-history-api';
 
 export function LoginHistoryPage() {
   const [page, setPage] = useState(1); const [search, setSearch] = useState(''); const [successful, setSuccessful] = useState('');
