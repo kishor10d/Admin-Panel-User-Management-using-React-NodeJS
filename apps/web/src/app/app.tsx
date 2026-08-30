@@ -14,7 +14,7 @@ export function App() {
   const currentUser = useQuery({ queryKey: ['auth', 'me'], queryFn: authApi.me, retry: false });
 
   if (location.pathname === '/reset-password') return <ResetPasswordPage />;
-  if (currentUser.isPending) return <main className="loading-screen">Loading CIAS Admin…</main>;
+  if (currentUser.isPending) return <main className="min-vh-100 d-flex align-items-center justify-content-center bg-body-secondary">Loading CIAS Admin…</main>;
   if (currentUser.isError) return <LoginPage />;
 
   return (
