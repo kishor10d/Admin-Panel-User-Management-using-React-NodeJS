@@ -39,7 +39,7 @@ export function RolesPage() {
   };
 
   return <div className="roles-page">
-    <div className="page-heading"><div><h1>Roles & permissions</h1><p>Define what each group of users can do.</p></div><button onClick={() => setEditing('new')}>Add role</button></div>
+    <div className="page-actions"><button className="btn btn-primary" onClick={() => setEditing('new')}><i className="bi bi-plus-circle-fill me-1" />Add role</button></div>
     <div className="table-card">
       {roles.isPending && <p>Loading roles…</p>}
       {roles.isError && <p className="status-error">{roles.error.message}</p>}

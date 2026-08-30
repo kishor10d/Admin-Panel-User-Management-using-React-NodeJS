@@ -44,7 +44,7 @@ export function UsersPage() {
   const onSearch = (value: string) => { setSearch(value); setPage(1); };
   return (
     <div className="users-page">
-      <div className="page-heading"><div><h1>Users</h1><p>Manage access to this application.</p></div><button onClick={() => setEditing({ ...emptyValues, id: '', isActive: true, mustChangePassword: true, roles: [], createdAt: '', updatedAt: '' } as ManagedUser)}>Add user</button></div>
+      <div className="page-actions"><button className="btn btn-primary" onClick={() => setEditing({ ...emptyValues, id: '', isActive: true, mustChangePassword: true, roles: [], createdAt: '', updatedAt: '' } as ManagedUser)}><i className="bi bi-person-plus-fill me-1" />Add user</button></div>
       <div className="table-card">
         <input className="search-input" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search name, email, or mobile" />
         {users.isPending && <p>Loading users…</p>}

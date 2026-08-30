@@ -107,6 +107,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Chosen the React + Node.js technology stack and monorepo approach.
 - [x] Created the pnpm workspace with `apps/web`, `apps/api`, and `packages/shared-types`.
 - [x] Added React/Vite, AdminLTE styling, Redux Toolkit, TanStack Query, React Hook Form, and Zod.
+- [x] Rebuilt the application shell around the AdminLTE v4 layout: header navbar, branded sidebar, content header, dashboard small boxes, cards, and footer.
 - [x] Added the NestJS API, MySQL/TypeORM configuration, and health endpoint.
 - [x] Added the TypeORM migration framework and applied the initial migration to the development database.
 - [x] Added normalized roles, permissions, user roles, password-reset tokens, and login-event data models.
