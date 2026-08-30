@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { authApi } from './auth';
+import { useState } from 'react';
+import { ForgotPasswordPage } from './password-pages';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
@@ -11,6 +13,7 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
+  const [forgotPassword, setForgotPassword] = useState(false);
   const queryClient = useQueryClient();
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
   const login = useMutation({
@@ -18,6 +21,7 @@ export function LoginPage() {
     onSuccess: ({ user }) => queryClient.setQueryData(['auth', 'me'], { user }),
   });
 
+  if (forgotPassword) return <ForgotPasswordPage onBack={() => setForgotPassword(false)} />;
   return (
     <main className="login-page">
       <form className="login-card" onSubmit={form.handleSubmit((values) => login.mutate(values))}>
@@ -29,6 +33,7 @@ export function LoginPage() {
         {form.formState.errors.password && <small>{form.formState.errors.password.message}</small>}
         {login.isError && <p className="status-error">{login.error.message}</p>}
         <button type="submit" disabled={login.isPending}>{login.isPending ? 'Signing in…' : 'Sign in'}</button>
+        <button type="button" className="link-button" onClick={() => setForgotPassword(true)}>Forgot password?</button>
       </form>
     </main>
   );

@@ -17,6 +17,7 @@ const applicationModules = databaseEnabled
       require('./auth/auth.module').AuthModule as typeof import('./auth/auth.module').AuthModule,
       require('./roles/roles.module').RolesModule as typeof import('./roles/roles.module').RolesModule,
       require('./users/users.module').UsersModule as typeof import('./users/users.module').UsersModule,
+      require('./login-history/login-history.module').LoginHistoryModule as typeof import('./login-history/login-history.module').LoginHistoryModule,
     ]
   : [];
 

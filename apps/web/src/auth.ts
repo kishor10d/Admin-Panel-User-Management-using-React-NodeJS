@@ -24,4 +24,7 @@ export const authApi = {
     body: JSON.stringify({ email, password }),
   }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
+  changePassword: (currentPassword: string, newPassword: string) => request<void>('/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ currentPassword, newPassword }) }),
+  forgotPassword: (email: string) => request<void>('/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) => request<void>('/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, password }) }),
 };

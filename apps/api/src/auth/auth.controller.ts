@@ -3,6 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AccessTokenGuard, type AuthenticatedRequest } from './access-token.guard';
 
 const accessCookieName = 'access_token';
@@ -33,6 +36,25 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   getCurrentUser(@Req() request: AuthenticatedRequest) {
     return { user: request.currentUser };
+  }
+
+  @Post('change-password')
+  @HttpCode(204)
+  @UseGuards(AccessTokenGuard)
+  async changePassword(@Req() request: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
+    await this.authService.changePassword(request.currentUser!.id, dto.currentPassword, dto.newPassword);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(204)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(204)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.password);
   }
 
   private cookieOptions() {

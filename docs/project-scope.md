@@ -121,6 +121,11 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added protected role-management APIs for listing, creating, editing, and deactivating roles.
 - [x] Added permission lookup and role-permission assignment APIs.
 - [x] Added the React role and permission management screen with permission selection.
+- [x] Added protected login-history API with pagination, search, date, and success/failure filters.
+- [x] Added the React login-history screen.
+- [x] Added change-password, forgot-password, and reset-password API flows.
+- [x] Added one-hour hashed reset tokens and development-only reset-link output.
+- [x] Added React change-password, forgot-password, and reset-password screens.
 - [x] Fixed environment loading so API runtime and TypeORM migrations use `apps/api/.env`.
 - [x] Fixed local dependency compatibility issues affecting TypeORM and Express request parsing.
 - [x] Verified the project builds successfully and login validation returns a normal `400` response instead of a `500` error.
@@ -132,14 +137,12 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [ ] Run `pnpm seed` with a unique administrator password.
 - [ ] Test login, logout, cookie persistence, and `/api/auth/me` end-to-end.
 - [ ] Add refresh-token rotation and token revocation for longer-lived sessions.
-- [ ] Add forgot-password, reset-password, and change-password flows.
 - [ ] Add rate limiting and account-locking rules for repeated failed logins.
 
 ### User and role management
 
 - [ ] Add a user restore action and a permanent deletion policy, if required.
 - [ ] Add a role restore action, if required.
-- [ ] Add login-history/audit-log screen.
 - [ ] Enforce permissions on every protected API route and hide unavailable UI controls.
 
 ### Application foundation
@@ -149,7 +152,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [ ] Add standard API error responses, request logging, and structured audit events.
 - [ ] Add automated API unit/integration tests and React component tests.
 - [ ] Add linting, formatting, pre-commit checks, and CI workflow.
-- [ ] Add email delivery configuration and a local mail-testing tool for password-reset tests.
+- [ ] Add email delivery configuration and a local mail-testing tool for password-reset tests; replace development-only reset-link output.
 
 ### Deployment and security
 

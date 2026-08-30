@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { LoginEvent, Permission, Role, RolePermission, User, UserRole } from '../database/entities';
+import { LoginEvent, PasswordResetToken, Permission, Role, RolePermission, User, UserRole } from '../database/entities';
 import { AccessTokenGuard } from './access-token.guard';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -11,7 +11,7 @@ import { PermissionsGuard } from './permissions.guard';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, Role, Permission, UserRole, RolePermission, LoginEvent]),
+    TypeOrmModule.forFeature([User, Role, Permission, UserRole, RolePermission, LoginEvent, PasswordResetToken]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
