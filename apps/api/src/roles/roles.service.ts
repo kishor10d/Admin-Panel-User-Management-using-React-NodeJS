@@ -23,12 +23,16 @@ export class RolesService {
     return { permissions: permissions.map((permission) => ({ id: permission.id, key: permission.key, description: permission.description })) };
   }
 
+  async findOne(id: string) {
+    const role = await this.roles.findOne({ where: { id } });
+    if (!role) throw new NotFoundException('Role not found.');
+    return this.present(role);
+  }
+
   async create(dto: CreateRoleDto) {
     const name = dto.name.trim();
     if (await this.roles.exist({ where: { name } })) throw new ConflictException('A role with this name already exists.');
-    await this.assertPermissionsExist(dto.permissionIds);
     const role = await this.roles.save(this.roles.create({ name, description: dto.description?.trim() || null, isActive: true }));
-    await this.replacePermissions(role.id, dto.permissionIds);
     return this.present(role);
   }
 
@@ -45,14 +49,24 @@ export class RolesService {
     }
     if (dto.description !== undefined) role.description = dto.description.trim() || null;
     if (dto.isActive !== undefined) role.isActive = dto.isActive;
-    if (dto.permissionIds) await this.assertPermissionsExist(dto.permissionIds);
     const updated = await this.roles.save(role);
-    if (dto.permissionIds) await this.replacePermissions(id, dto.permissionIds);
     return this.present(updated);
+  }
+
+  async updatePermissions(id: string, permissionIds: string[]) {
+    const role = await this.roles.findOne({ where: { id } });
+    if (!role) throw new NotFoundException('Role not found.');
+    await this.assertPermissionsExist(permissionIds);
+    await this.replacePermissions(id, permissionIds);
+    return this.present(role);
   }
 
   async deactivate(id: string) {
     return this.update(id, { isActive: false });
+  }
+
+  async activate(id: string) {
+    return this.update(id, { isActive: true });
   }
 
   private async assertPermissionsExist(permissionIds: string[]) {

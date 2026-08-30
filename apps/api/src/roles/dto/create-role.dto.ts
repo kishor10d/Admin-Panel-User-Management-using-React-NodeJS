@@ -1,4 +1,4 @@
-import { ArrayUnique, IsArray, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateRoleDto {
   @IsString()
@@ -9,9 +9,4 @@ export class CreateRoleDto {
   @IsString()
   @MaxLength(255)
   description?: string;
-
-  @IsArray()
-  @ArrayUnique()
-  @IsUUID('4', { each: true })
-  permissionIds!: string[];
 }

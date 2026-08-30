@@ -66,6 +66,15 @@ The first migration creates:
 
 The schema uses UUID identifiers, foreign keys, indexes, soft deletion for principal records, and `utf8mb4`-compatible MySQL tables.
 
+## Role and permission workflow
+
+Role creation and editing are limited to role name and description. Permissions are not shown in those forms.
+
+Each role has a dedicated Role Details page with:
+
+- A read-only Role Information card for its metadata and status.
+- A Permissions card containing a module-wise, human-readable permission matrix. Administrators assign or remove permissions in this matrix and save them independently of role metadata.
+
 ## Environment configuration
 
 The API and its migrations read only:
@@ -142,7 +151,9 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added the React user-management screen with search, pagination, create, edit, role selection, and deactivation actions.
 - [x] Added protected role-management APIs for listing, creating, editing, and deactivating roles.
 - [x] Added permission lookup and role-permission assignment APIs.
-- [x] Added the React role and permission management screen with permission selection.
+- [x] Added role metadata create/edit forms with only name and description.
+- [x] Added a Role Details page with read-only role information and a module-wise, human-readable permission matrix for assigning and removing permissions.
+- [x] Added role activation and deactivation actions.
 - [x] Added protected login-history API with pagination, search, date, and success/failure filters.
 - [x] Added the React login-history screen.
 - [x] Added change-password, forgot-password, and reset-password API flows.
@@ -167,7 +178,6 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 ### User and role management
 
 - [ ] Add a user restore action and a permanent deletion policy, if required.
-- [ ] Add a role restore action, if required.
 - [ ] Enforce permissions on every protected API route and hide unavailable UI controls.
 
 ### Application foundation

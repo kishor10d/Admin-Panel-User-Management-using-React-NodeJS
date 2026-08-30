@@ -9,6 +9,7 @@ import { ForgotPasswordPage, ResetPasswordPage } from '../features/auth/pages/pa
 import { DashboardPage } from '../features/dashboard/pages/dashboard-page';
 import { LoginHistoryPage } from '../features/login-history/pages/login-history-page';
 import { ProfilePage } from '../features/profile/pages/profile-page';
+import { RoleDetailsPage } from '../features/roles/pages/role-details-page';
 import { RolesPage } from '../features/roles/pages/roles-page';
 import { UsersPage } from '../features/users/pages/users-page';
 import { setLogoutIntent, type RootState } from './store';
@@ -53,5 +54,5 @@ function AuthenticatedApp() {
   if (currentUser.isPending) return <main className="min-vh-100 d-flex align-items-center justify-content-center bg-body-secondary">Loading CIAS Admin…</main>;
   if (currentUser.isError) return location.pathname === '/' ? <LoginPage /> : <Navigate to="/" replace />;
 
-  return <Routes><Route element={<AppLayout user={currentUser.data.user} />}><Route index element={<DashboardPage />} /><Route path="users" element={<UsersPage />} /><Route path="roles" element={<RolesPage />} /><Route path="login-history" element={<LoginHistoryPage />} /><Route path="profile" element={<ProfilePage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>;
+  return <Routes><Route element={<AppLayout user={currentUser.data.user} />}><Route index element={<DashboardPage />} /><Route path="users" element={<UsersPage />} /><Route path="roles" element={<RolesPage />} /><Route path="roles/:roleId" element={<RoleDetailsPage />} /><Route path="login-history" element={<LoginHistoryPage />} /><Route path="profile" element={<ProfilePage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>;
 }

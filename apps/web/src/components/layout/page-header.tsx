@@ -3,7 +3,8 @@ import { pageTitles } from './navigation';
 
 export function PageHeader() {
   const location = useLocation();
-  const pageTitle = pageTitles[location.pathname] ?? 'Admin panel';
+  const isRoleDetails = location.pathname.startsWith('/roles/');
+  const pageTitle = isRoleDetails ? 'Role details' : pageTitles[location.pathname] ?? 'Admin panel';
 
   return (
     <div className="app-content-header">
@@ -13,6 +14,7 @@ export function PageHeader() {
           <div className="col-sm-6">
             <ol className="breadcrumb float-sm-end mb-0">
               <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+              {isRoleDetails && <li className="breadcrumb-item"><Link to="/roles">Roles &amp; permissions</Link></li>}
               <li className="breadcrumb-item active">{pageTitle}</li>
             </ol>
           </div>
