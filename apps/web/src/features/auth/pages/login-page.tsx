@@ -1,10 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { authApi } from '../api/auth-api';
-import { ForgotPasswordPage } from './password-pages';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email address.'),
@@ -13,7 +12,6 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
-  const [forgotPassword, setForgotPassword] = useState(false);
   const queryClient = useQueryClient();
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
   const login = useMutation({
@@ -21,6 +19,31 @@ export function LoginPage() {
     onSuccess: ({ user }) => queryClient.setQueryData(['auth', 'me'], { user }),
   });
 
-  if (forgotPassword) return <ForgotPasswordPage onBack={() => setForgotPassword(false)} />;
-  return <main className="min-vh-100 d-flex align-items-center justify-content-center bg-body-secondary p-3"><form className="card card-outline card-primary shadow-sm w-100" style={{ maxWidth: 390 }} onSubmit={form.handleSubmit((values) => login.mutate(values))}><div className="card-body login-card-body"><h1 className="h3 text-center mb-1">CIAS Admin</h1><p className="text-center text-body-secondary mb-4">Sign in to continue.</p><div className="mb-3"><label className="form-label" htmlFor="login-email">Email</label><input id="login-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" autoComplete="email" {...form.register('email')} />{form.formState.errors.email && <div className="invalid-feedback">{form.formState.errors.email.message}</div>}</div><div className="mb-3"><label className="form-label" htmlFor="login-password">Password</label><input id="login-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" autoComplete="current-password" {...form.register('password')} />{form.formState.errors.password && <div className="invalid-feedback">{form.formState.errors.password.message}</div>}</div>{login.isError && <div className="alert alert-danger py-2" role="alert">{login.error.message}</div>}<button className="btn btn-primary w-100" type="submit" disabled={login.isPending}>{login.isPending ? 'Signing in…' : 'Sign in'}</button><button type="button" className="btn btn-link w-100 mt-2" onClick={() => setForgotPassword(true)}>Forgot password?</button></div></form></main>;
+  return <main className="login-page bg-body-secondary">
+    <div className="login-box">
+      <div className="login-logo">CIAS <b>Admin</b></div>
+      <div className="card">
+        <div className="card-body login-card-body">
+          <p className="login-box-msg">Sign in to start your session</p>
+          <form onSubmit={form.handleSubmit((values) => login.mutate(values))}>
+            <div className="input-group mb-3">
+              <input id="login-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" placeholder="Email" autoComplete="email" aria-label="Email" {...form.register('email')} />
+              <div className="input-group-text"><span className="bi bi-envelope" /></div>
+              {form.formState.errors.email && <div className="invalid-feedback d-block">{form.formState.errors.email.message}</div>}
+            </div>
+            <div className="input-group mb-3">
+              <input id="login-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" placeholder="Password" autoComplete="current-password" aria-label="Password" {...form.register('password')} />
+              <div className="input-group-text"><span className="bi bi-lock-fill" /></div>
+              {form.formState.errors.password && <div className="invalid-feedback d-block">{form.formState.errors.password.message}</div>}
+            </div>
+            {login.isError && <div className="alert alert-danger py-2" role="alert">{login.error.message}</div>}
+            <div className="row">
+              <div className="col-12"><button className="btn btn-primary w-100" type="submit" disabled={login.isPending}>{login.isPending ? 'Signing in…' : 'Sign In'}</button></div>
+            </div>
+          </form>
+          <p className="mb-1 mt-3"><Link to="/forgot-password">I forgot my password</Link></p>
+        </div>
+      </div>
+    </div>
+  </main>;
 }
