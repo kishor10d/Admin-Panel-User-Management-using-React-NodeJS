@@ -6,6 +6,7 @@ import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
+import { ListRolesQueryDto } from './dto/list-roles-query.dto';
 
 @Controller('roles')
 @UseGuards(AccessTokenGuard, PermissionsGuard)
@@ -14,8 +15,8 @@ export class RolesController {
 
   @Get()
   @RequirePermissions('roles.read')
-  list(@Query('includeInactive') includeInactive?: string) {
-    return this.rolesService.list(includeInactive === 'true');
+  list(@Query() query: ListRolesQueryDto) {
+    return this.rolesService.list(query);
   }
 
   @Get('permissions')

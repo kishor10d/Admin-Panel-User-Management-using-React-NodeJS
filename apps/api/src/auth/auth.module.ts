@@ -7,10 +7,12 @@ import { AccessTokenGuard } from './access-token.guard';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { PermissionsGuard } from './permissions.guard';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     ConfigModule,
+    MailModule,
     TypeOrmModule.forFeature([User, Role, Permission, UserRole, RolePermission, LoginEvent, PasswordResetToken]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

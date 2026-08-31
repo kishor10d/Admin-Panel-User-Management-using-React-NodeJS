@@ -158,6 +158,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added user activation and deactivation actions.
 - [x] Added persisted Regular, System Administrator, and Service user types, including System Administrator authorization bypass and protected management rules.
 - [x] Added matching web authorization gates: permission-filtered navigation and dashboard links, guarded routes with an access-denied page, and permission-filtered user/role actions and controls.
+- [x] Added a reusable server-driven table foundation with debounced search, whitelisted column sorting, page-size selection, numbered pagination, and reusable empty-table states across Users, Roles, and Login History.
 - [x] Added protected role lookup for user-role assignment.
 - [x] Added the React user-management screen with search, pagination, create, edit, role selection, and deactivation actions.
 - [x] Added protected role-management APIs for listing, creating, editing, and deactivating roles.
@@ -173,6 +174,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added authenticated self-profile updates for name, email, and mobile.
 - [x] Added one-hour hashed reset tokens and development-only reset-link output.
 - [x] Added React forgot-password and reset-password screens, with authenticated password changes available from the Profile page.
+- [x] Added SMTP-configurable password-reset email delivery with HTML and text templates, production-safe token handling, and local development reset-link output.
 - [x] Fixed environment loading so API runtime and TypeORM migrations use `apps/api/.env`.
 - [x] Fixed local dependency compatibility issues affecting TypeORM and Express request parsing.
 - [x] Verified the project builds successfully and login validation returns a normal `400` response instead of a `500` error.
@@ -194,11 +196,11 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 ### Application foundation
 
 - [ ] Move shared API DTOs and permission constants into a compiled shared package where practical.
-- [ ] Add reusable UI primitives for data tables, dialogs, form fields, status badges, and empty/loading states as more features are built.
+- [ ] Extend shared UI primitives beyond the table foundation to dialogs, form fields, status badges, and richer loading states as more features are built.
 - [ ] Add standard API error responses, request logging, and structured audit events.
 - [ ] Add automated API unit/integration tests and React component tests.
 - [ ] Add linting, formatting, pre-commit checks, and CI workflow.
-- [ ] Add email delivery configuration and a local mail-testing tool for password-reset tests; replace development-only reset-link output.
+- [ ] Configure a production SMTP provider and a local mail-testing inbox for password-reset verification.
 
 ### Deployment and security
 

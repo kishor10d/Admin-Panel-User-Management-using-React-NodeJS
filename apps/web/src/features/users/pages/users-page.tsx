@@ -5,8 +5,10 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
 import { hasPermission, isSystemAdministrator, useCurrentUser } from '../../../app/current-user-context';
+import { DataTableFooter, EmptyTableRow, SortableTableHeader } from '../../../components/ui/data-table';
 import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '../../../lib/password-policy';
-import { usersApi, type ManagedUser, type UserType } from '../api/users-api';
+import { useDebouncedValue } from '../../../lib/use-debounced-value';
+import { usersApi, type ListUsersOptions, type ManagedUser, type UserType } from '../api/users-api';
 
 const userTypes = ['REGULAR', 'SYSTEM_ADMINISTRATOR', 'SERVICE'] as const;
 const userTypeLabels: Record<UserType, string> = {
@@ -46,8 +48,12 @@ export function UsersPage() {
   const availableUserTypes = canManageSystemAdministrators ? userTypes : userTypes.filter((userType) => userType !== 'SYSTEM_ADMINISTRATOR');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [sortBy, setSortBy] = useState<ListUsersOptions['sortBy']>('createdAt');
+  const [sortOrder, setSortOrder] = useState<ListUsersOptions['sortOrder']>('DESC');
   const [editing, setEditing] = useState<ManagedUser | 'new' | null>(null);
-  const users = useQuery({ queryKey: ['users', page, search], queryFn: () => usersApi.list(page, search) });
+  const debouncedSearch = useDebouncedValue(search);
+  const users = useQuery({ queryKey: ['users', page, limit, debouncedSearch, sortBy, sortOrder], queryFn: () => usersApi.list({ page, limit, search: debouncedSearch, sortBy, sortOrder }) });
   const roles = useQuery({ queryKey: ['roles'], queryFn: usersApi.roles, enabled: canCreate || canUpdate });
   const form = useForm<UserFormValues>({ resolver: zodResolver(editing === 'new' ? createUserSchema : updateUserSchema), defaultValues: emptyValues });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -91,6 +97,12 @@ export function UsersPage() {
     setSearch(value);
     setPage(1);
   };
+  const changeLimit = (nextLimit: number) => { setLimit(nextLimit); setPage(1); };
+  const toggleSort = (field: ListUsersOptions['sortBy']) => {
+    if (sortBy === field) setSortOrder((current) => current === 'ASC' ? 'DESC' : 'ASC');
+    else { setSortBy(field); setSortOrder('ASC'); }
+    setPage(1);
+  };
 
   return <>
     {canCreate && <div className="d-flex justify-content-end mb-3"><button className="btn btn-primary" onClick={() => setEditing('new')}><i className="bi bi-person-plus-fill me-1" />Add user</button></div>}
@@ -100,7 +112,7 @@ export function UsersPage() {
         {users.isPending && <div className="p-3 text-body-secondary">Loading users…</div>}
         {users.isError && <div className="alert alert-danger m-3 mb-0">{users.error.message}</div>}
         {users.data && <table className="table table-hover text-nowrap mb-0">
-          <thead><tr><th>Name</th><th>Email</th><th>User type</th><th>Roles</th><th>Status</th><th className="text-end">Actions</th></tr></thead>
+          <thead><tr><SortableTableHeader label="Name" field="name" sortBy={sortBy} sortOrder={sortOrder} onSort={(field) => toggleSort(field as ListUsersOptions['sortBy'])} /><SortableTableHeader label="Email" field="email" sortBy={sortBy} sortOrder={sortOrder} onSort={(field) => toggleSort(field as ListUsersOptions['sortBy'])} /><SortableTableHeader label="User type" field="userType" sortBy={sortBy} sortOrder={sortOrder} onSort={(field) => toggleSort(field as ListUsersOptions['sortBy'])} /><th>Roles</th><SortableTableHeader label="Status" field="isActive" sortBy={sortBy} sortOrder={sortOrder} onSort={(field) => toggleSort(field as ListUsersOptions['sortBy'])} /><th className="text-end">Actions</th></tr></thead>
           <tbody>{users.data.items.map((user) => {
             const canManageUser = user.userType !== 'SYSTEM_ADMINISTRATOR' || canManageSystemAdministrators;
             return <tr key={user.id}>
@@ -112,19 +124,21 @@ export function UsersPage() {
               {canUpdate && canManageUser && !user.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => { if (window.confirm(`Activate ${user.email}?`)) activate.mutate(user.id); }} aria-label={`Activate ${user.email}`} title="Activate user"><i className="bi bi-arrow-counterclockwise" /></button>}
             </div></td>
           </tr>;
-          })}</tbody>
+          })}{users.data.items.length === 0 && <EmptyTableRow colSpan={6} message="No users found." />}</tbody>
         </table>}
       </div>
-      {users.data && <div className="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2"><span className="text-body-secondary small">{users.data.total} user(s)</span><nav aria-label="User pagination"><ul className="pagination pagination-sm mb-0"><li className={`page-item ${page <= 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page - 1)}>Previous</button></li><li className="page-item disabled"><span className="page-link">Page {page} of {users.data.totalPages}</span></li><li className={`page-item ${page >= users.data.totalPages ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page + 1)}>Next</button></li></ul></nav></div>}
+      {users.data && <DataTableFooter itemLabel="users" total={users.data.total} page={page} totalPages={users.data.totalPages} limit={limit} onPageChange={setPage} onLimitChange={changeLimit} />}
     </section>
-    {editing && <UserModal editing={editing} form={form} roles={roles.data?.roles ?? []} availableUserTypes={availableUserTypes} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
+    {editing && <UserModal editing={editing} form={form} roles={roles.data?.roles ?? []} rolesLoading={roles.isPending} rolesError={roles.isError ? roles.error.message : undefined} availableUserTypes={availableUserTypes} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
   </>;
 }
 
-function UserModal({ editing, form, roles, availableUserTypes, saving, onClose, onSave }: {
+function UserModal({ editing, form, roles, rolesLoading, rolesError, availableUserTypes, saving, onClose, onSave }: {
   editing: ManagedUser | 'new';
   form: ReturnType<typeof useForm<UserFormValues>>;
   roles: Array<{ id: string; name: string }>;
+  rolesLoading: boolean;
+  rolesError?: string;
   availableUserTypes: readonly UserType[];
   saving: boolean;
   onClose: () => void;
@@ -159,8 +173,9 @@ function UserModal({ editing, form, roles, availableUserTypes, saving, onClose, 
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="user-role">Role</label>
-                <select id="user-role" className={`form-select ${form.formState.errors.roleId ? 'is-invalid' : ''}`} {...form.register('roleId')}><option value="">Select a role</option>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select>
+                <select id="user-role" className={`form-select ${form.formState.errors.roleId ? 'is-invalid' : ''}`} disabled={rolesLoading || Boolean(rolesError)} {...form.register('roleId')}><option value="">{rolesLoading ? 'Loading roles…' : rolesError ? 'Roles unavailable' : 'Select a role'}</option>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select>
                 {form.formState.errors.roleId && <div className="invalid-feedback">{form.formState.errors.roleId.message}</div>}
+                {rolesError && <div className="form-text text-danger">{rolesError}</div>}
               </div>
               <div className="col-12">
                 <label className="form-label" htmlFor="user-password">{editing === 'new' ? 'Password' : 'New password (optional)'}</label>

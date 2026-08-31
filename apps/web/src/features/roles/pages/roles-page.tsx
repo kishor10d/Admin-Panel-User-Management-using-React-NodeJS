@@ -6,7 +6,9 @@ import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
 import { hasPermission, useCurrentUser } from '../../../app/current-user-context';
-import { rolesApi, type ManagedRole } from '../api/roles-api';
+import { DataTableFooter, EmptyTableRow, SortableTableHeader } from '../../../components/ui/data-table';
+import { useDebouncedValue } from '../../../lib/use-debounced-value';
+import { rolesApi, type ListRolesOptions, type ManagedRole } from '../api/roles-api';
 
 const roleSchema = z.object({
   name: z.string().trim().min(2, 'Enter a role name.').max(50),
@@ -20,8 +22,14 @@ export function RolesPage() {
   const toast = useToast();
   const currentUser = useCurrentUser();
   const canManage = hasPermission(currentUser, 'roles.manage');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [sortBy, setSortBy] = useState<ListRolesOptions['sortBy']>('name');
+  const [sortOrder, setSortOrder] = useState<ListRolesOptions['sortOrder']>('ASC');
   const [editing, setEditing] = useState<ManagedRole | 'new' | null>(null);
-  const roles = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list });
+  const debouncedSearch = useDebouncedValue(search);
+  const roles = useQuery({ queryKey: ['roles', page, limit, debouncedSearch, sortBy, sortOrder], queryFn: () => rolesApi.list({ page, limit, search: debouncedSearch, includeInactive: true, sortBy, sortOrder }) });
   const form = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: emptyValues });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['roles'] });
 
@@ -58,6 +66,11 @@ export function RolesPage() {
     },
     onError: (error) => toast.error(error.message),
   });
+  const toggleSort = (field: ListRolesOptions['sortBy']) => {
+    if (sortBy === field) setSortOrder((current) => current === 'ASC' ? 'DESC' : 'ASC');
+    else { setSortBy(field); setSortOrder('ASC'); }
+    setPage(1);
+  };
 
   return <>
     {canManage && <div className="d-flex justify-content-end mb-3">
@@ -66,11 +79,12 @@ export function RolesPage() {
       </button>
     </div>}
     <section className="card">
+      <div className="card-header"><div className="card-tools"><div className="input-group input-group-sm"><input className="form-control" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search roles" /><span className="input-group-text"><i className="bi bi-search" /></span></div></div></div>
       <div className="card-body table-responsive p-0">
         {roles.isPending && <div className="p-3 text-body-secondary">Loading roles…</div>}
         {roles.isError && <div className="alert alert-danger m-3 mb-0">{roles.error.message}</div>}
         {roles.data && <table className="table table-hover align-middle mb-0">
-          <thead><tr><th>Role</th><th>Assigned permissions</th><th>Status</th><th className="text-end">Actions</th></tr></thead>
+          <thead><tr><SortableTableHeader label="Role" field="name" sortBy={sortBy} sortOrder={sortOrder} onSort={(field) => toggleSort(field as ListRolesOptions['sortBy'])} /><th>Assigned permissions</th><SortableTableHeader label="Status" field="isActive" sortBy={sortBy} sortOrder={sortOrder} onSort={(field) => toggleSort(field as ListRolesOptions['sortBy'])} /><th className="text-end">Actions</th></tr></thead>
           <tbody>{roles.data.roles.map((role) => <tr key={role.id}>
             <td><strong>{role.name}</strong>{role.description && <div className="text-body-secondary small mt-1">{role.description}</div>}</td>
             <td className="text-body-secondary">{role.permissions.length} assigned</td>
@@ -87,9 +101,10 @@ export function RolesPage() {
               }} aria-label={`Activate ${role.name}`} title="Activate role"><i className="bi bi-arrow-counterclockwise" /></button>}
               </div>
             </td>
-          </tr>)}</tbody>
+          </tr>)}{roles.data.roles.length === 0 && <EmptyTableRow colSpan={4} message="No roles found." />}</tbody>
         </table>}
       </div>
+      {roles.data && <DataTableFooter itemLabel="roles" total={roles.data.total} page={page} totalPages={roles.data.totalPages} limit={limit} onPageChange={setPage} onLimitChange={(nextLimit) => { setLimit(nextLimit); setPage(1); }} />}
     </section>
     {editing && <RoleModal editing={editing} form={form} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
   </>;

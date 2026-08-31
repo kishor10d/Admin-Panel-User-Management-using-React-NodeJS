@@ -1,7 +1,7 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
-export class ListLoginEventsQueryDto {
+export class ListRolesQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -23,21 +23,13 @@ export class ListLoginEventsQueryDto {
   @IsOptional()
   @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : value)
   @IsBoolean()
-  successful?: boolean;
+  includeInactive = false;
 
   @IsOptional()
-  @IsDateString()
-  from?: string;
-
-  @IsOptional()
-  @IsDateString()
-  to?: string;
-
-  @IsOptional()
-  @IsIn(['createdAt', 'email', 'ipAddress', 'successful'])
-  sortBy: 'createdAt' | 'email' | 'ipAddress' | 'successful' = 'createdAt';
+  @IsIn(['name', 'createdAt', 'isActive'])
+  sortBy: 'name' | 'createdAt' | 'isActive' = 'name';
 
   @IsOptional()
   @IsIn(['ASC', 'DESC'])
-  sortOrder: 'ASC' | 'DESC' = 'DESC';
+  sortOrder: 'ASC' | 'DESC' = 'ASC';
 }

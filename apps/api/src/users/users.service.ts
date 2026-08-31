@@ -18,7 +18,8 @@ export class UsersService {
   ) {}
 
   async list(query: ListUsersQueryDto) {
-    const builder = this.users.createQueryBuilder('user').where('user.deleted_at IS NULL').orderBy('user.created_at', 'DESC');
+    const sortColumns = { createdAt: 'user.created_at', name: 'user.name', email: 'user.email', userType: 'user.user_type', isActive: 'user.is_active' } as const;
+    const builder = this.users.createQueryBuilder('user').where('user.deleted_at IS NULL').orderBy(sortColumns[query.sortBy], query.sortOrder);
     const search = query.search?.trim();
     if (search) {
       builder.andWhere('(user.email LIKE :search OR user.name LIKE :search OR user.mobile LIKE :search)', { search: `%${search}%` });
@@ -31,6 +32,11 @@ export class UsersService {
       total,
       totalPages: Math.max(1, Math.ceil(total / query.limit)),
     };
+  }
+
+  async listRoleOptions() {
+    const roles = await this.roles.find({ where: { isActive: true }, order: { name: 'ASC' } });
+    return { roles: roles.map((role) => ({ id: role.id, name: role.name, description: role.description, isActive: role.isActive })) };
   }
 
   async create(dto: CreateUserDto, actingUser: AuthUser) {

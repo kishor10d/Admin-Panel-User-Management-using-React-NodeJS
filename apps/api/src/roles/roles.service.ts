@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { Permission, Role, RolePermission } from '../database/entities';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { ListRolesQueryDto } from './dto/list-roles-query.dto';
 
 @Injectable()
 export class RolesService {
@@ -13,9 +14,20 @@ export class RolesService {
     @InjectRepository(RolePermission) private readonly rolePermissions: Repository<RolePermission>,
   ) {}
 
-  async list(includeInactive = false) {
-    const roles = await this.roles.find({ where: includeInactive ? {} : { isActive: true }, order: { name: 'ASC' } });
-    return { roles: await this.presentMany(roles) };
+  async list(query: ListRolesQueryDto) {
+    const sortColumns = { name: 'role.name', createdAt: 'role.created_at', isActive: 'role.is_active' } as const;
+    const builder = this.roles.createQueryBuilder('role').orderBy(sortColumns[query.sortBy], query.sortOrder);
+    if (!query.includeInactive) builder.where('role.is_active = :isActive', { isActive: true });
+    const search = query.search?.trim();
+    if (search) builder.andWhere('(role.name LIKE :search OR role.description LIKE :search)', { search: `%${search}%` });
+    const [roles, total] = await builder.skip((query.page - 1) * query.limit).take(query.limit).getManyAndCount();
+    return {
+      roles: await this.presentMany(roles),
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / query.limit)),
+    };
   }
 
   async listPermissions() {

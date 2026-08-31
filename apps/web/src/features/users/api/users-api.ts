@@ -8,12 +8,13 @@ export interface ManagedUser {
   createdAt: string; updatedAt: string;
 }
 export interface UsersPageResponse { items: ManagedUser[]; page: number; limit: number; total: number; totalPages: number; }
+export interface ListUsersOptions { page: number; limit: number; search: string; sortBy: 'createdAt' | 'name' | 'email' | 'userType' | 'isActive'; sortOrder: 'ASC' | 'DESC'; }
 
 const json = (data: Record<string, unknown>) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, data });
 
 export const usersApi = {
-  list: (page: number, search: string) => apiRequest<UsersPageResponse>(`/users?${createQueryString({ page, limit: 20, search })}`),
-  roles: () => apiRequest<{ roles: RoleOption[] }>('/roles'),
+  list: (options: ListUsersOptions) => apiRequest<UsersPageResponse>(`/users?${createQueryString(options)}`),
+  roles: () => apiRequest<{ roles: RoleOption[] }>('/users/role-options'),
   create: (data: Record<string, unknown>) => apiRequest<ManagedUser>('/users', json(data)),
   update: (id: string, data: Record<string, unknown>) => apiRequest<ManagedUser>(`/users/${id}`, { ...json(data), method: 'PATCH' }),
   deactivate: (id: string) => apiRequest<ManagedUser>(`/users/${id}/deactivate`, { method: 'PATCH' }),

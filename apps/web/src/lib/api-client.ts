@@ -26,7 +26,7 @@ export async function apiRequest<T>(path: string, config?: AxiosRequestConfig): 
   return response.data;
 }
 
-export function createQueryString(values: Record<string, string | number | boolean | undefined>) {
+export function createQueryString(values: object) {
   const parameters = new URLSearchParams();
   for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && value !== '') parameters.set(key, String(value));

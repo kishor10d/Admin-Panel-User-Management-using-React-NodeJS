@@ -9,7 +9,8 @@ export class LoginHistoryService {
   constructor(@InjectRepository(LoginEvent) private readonly loginEvents: Repository<LoginEvent>) {}
 
   async list(query: ListLoginEventsQueryDto) {
-    const builder = this.loginEvents.createQueryBuilder('event').where('event.deleted_at IS NULL').orderBy('event.created_at', 'DESC');
+    const sortColumns = { createdAt: 'event.created_at', email: 'event.email', ipAddress: 'event.ip_address', successful: 'event.successful' } as const;
+    const builder = this.loginEvents.createQueryBuilder('event').where('event.deleted_at IS NULL').orderBy(sortColumns[query.sortBy], query.sortOrder);
     const search = query.search?.trim();
     if (search) builder.andWhere('(event.email LIKE :search OR event.ip_address LIKE :search OR event.user_agent LIKE :search)', { search: `%${search}%` });
     if (query.successful !== undefined) builder.andWhere('event.successful = :successful', { successful: query.successful });

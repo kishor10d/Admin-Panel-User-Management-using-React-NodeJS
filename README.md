@@ -45,3 +45,20 @@ pnpm seed
 ```
 
 This creates the System Administrator role, the default permissions, and the account identified by `ADMIN_EMAIL` (default: `admin@example.com`). The generated password is never committed to Git.
+
+## Password-reset email
+
+Set the SMTP values in `apps/api/.env` to deliver password-reset email in production:
+
+```env
+WEB_ORIGIN=https://admin.example.com
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_SECURE=false
+MAIL_USER=...
+MAIL_PASSWORD=...
+MAIL_FROM_NAME=CIAS Admin
+MAIL_FROM_EMAIL=no-reply@example.com
+```
+
+For local development, leave `MAIL_HOST` and `MAIL_FROM_EMAIL` empty to log the reset URL in the API terminal, or point them at a local SMTP test inbox such as Mailpit.

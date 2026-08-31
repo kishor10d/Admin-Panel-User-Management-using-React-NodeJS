@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,9 +8,12 @@ import { In, IsNull, Repository } from 'typeorm';
 import { LoginEvent, PasswordResetToken, Permission, Role, RolePermission, User, UserRole } from '../database/entities';
 import type { AuthUser, JwtPayload } from './auth-user.type';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
@@ -21,6 +24,7 @@ export class AuthService {
     @InjectRepository(RolePermission) private readonly rolePermissions: Repository<RolePermission>,
     @InjectRepository(LoginEvent) private readonly loginEvents: Repository<LoginEvent>,
     @InjectRepository(PasswordResetToken) private readonly resetTokens: Repository<PasswordResetToken>,
+    private readonly mailService: MailService,
   ) {}
 
   async login(email: string, password: string, ipAddress?: string, userAgent?: string) {
@@ -103,11 +107,16 @@ export class AuthService {
     await this.resetTokens.update({ userId: user.id, usedAt: IsNull() }, { usedAt: new Date() });
     const token = randomBytes(32).toString('hex');
     const tokenHash = this.hashToken(token);
-    await this.resetTokens.save(this.resetTokens.create({ userId: user.id, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000), usedAt: null }));
+    const resetToken = await this.resetTokens.save(this.resetTokens.create({ userId: user.id, tokenHash, expiresAt: new Date(Date.now() + 60 * 60 * 1000), usedAt: null }));
 
-    if (this.config.get<string>('NODE_ENV') !== 'production') {
-      const webOrigin = this.config.get<string>('WEB_ORIGIN') ?? 'http://localhost:5173';
-      console.info(`Development password-reset link for ${user.email}: ${webOrigin}/reset-password?token=${token}`);
+    const resetUrl = new URL('/reset-password', this.config.get<string>('WEB_ORIGIN') ?? 'http://localhost:5180');
+    resetUrl.searchParams.set('token', token);
+    try {
+      await this.mailService.sendPasswordReset({ to: user.email, name: user.name, resetUrl: resetUrl.toString() });
+    } catch (error) {
+      resetToken.usedAt = new Date();
+      await this.resetTokens.save(resetToken);
+      this.logger.error(`Password-reset email could not be delivered for user ${user.id}.`, error instanceof Error ? error.stack : undefined);
     }
   }
 

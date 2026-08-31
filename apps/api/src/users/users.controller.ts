@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from
 import { AccessTokenGuard, type AuthenticatedRequest } from '../auth/access-token.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { RequirePermissions } from '../auth/require-permissions.decorator';
+import { RequireAnyPermissions } from '../auth/require-any-permissions.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -16,6 +17,12 @@ export class UsersController {
   @RequirePermissions('users.read')
   list(@Query() query: ListUsersQueryDto) {
     return this.usersService.list(query);
+  }
+
+  @Get('role-options')
+  @RequireAnyPermissions('users.create', 'users.update')
+  listRoleOptions() {
+    return this.usersService.listRoleOptions();
   }
 
   @Post()
