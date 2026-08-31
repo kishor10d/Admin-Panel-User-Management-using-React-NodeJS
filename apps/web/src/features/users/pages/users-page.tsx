@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
+import { hasPermission, isSystemAdministrator, useCurrentUser } from '../../../app/current-user-context';
 import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '../../../lib/password-policy';
 import { usersApi, type ManagedUser, type UserType } from '../api/users-api';
 
@@ -37,11 +38,17 @@ const emptyValues: UserFormValues = { email: '', name: '', mobile: '', userType:
 export function UsersPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const currentUser = useCurrentUser();
+  const canCreate = hasPermission(currentUser, 'users.create');
+  const canUpdate = hasPermission(currentUser, 'users.update');
+  const canDeactivate = hasPermission(currentUser, 'users.delete');
+  const canManageSystemAdministrators = isSystemAdministrator(currentUser);
+  const availableUserTypes = canManageSystemAdministrators ? userTypes : userTypes.filter((userType) => userType !== 'SYSTEM_ADMINISTRATOR');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<ManagedUser | 'new' | null>(null);
   const users = useQuery({ queryKey: ['users', page, search], queryFn: () => usersApi.list(page, search) });
-  const roles = useQuery({ queryKey: ['roles'], queryFn: usersApi.roles });
+  const roles = useQuery({ queryKey: ['roles'], queryFn: usersApi.roles, enabled: canCreate || canUpdate });
   const form = useForm<UserFormValues>({ resolver: zodResolver(editing === 'new' ? createUserSchema : updateUserSchema), defaultValues: emptyValues });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['users'] });
 
@@ -86,7 +93,7 @@ export function UsersPage() {
   };
 
   return <>
-    <div className="d-flex justify-content-end mb-3"><button className="btn btn-primary" onClick={() => setEditing('new')}><i className="bi bi-person-plus-fill me-1" />Add user</button></div>
+    {canCreate && <div className="d-flex justify-content-end mb-3"><button className="btn btn-primary" onClick={() => setEditing('new')}><i className="bi bi-person-plus-fill me-1" />Add user</button></div>}
     <section className="card">
       <div className="card-header"><div className="card-tools"><div className="input-group input-group-sm" style={{ width: 320 }}><input className="form-control" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search name, email, or mobile" /><span className="input-group-text"><i className="bi bi-search" /></span></div></div></div>
       <div className="card-body table-responsive p-0">
@@ -94,27 +101,31 @@ export function UsersPage() {
         {users.isError && <div className="alert alert-danger m-3 mb-0">{users.error.message}</div>}
         {users.data && <table className="table table-hover text-nowrap mb-0">
           <thead><tr><th>Name</th><th>Email</th><th>User type</th><th>Roles</th><th>Status</th><th className="text-end">Actions</th></tr></thead>
-          <tbody>{users.data.items.map((user) => <tr key={user.id}>
+          <tbody>{users.data.items.map((user) => {
+            const canManageUser = user.userType !== 'SYSTEM_ADMINISTRATOR' || canManageSystemAdministrators;
+            return <tr key={user.id}>
             <td>{user.name || '—'}</td><td>{user.email}</td><td>{userTypeLabels[user.userType]}</td><td>{user.roles.map((role) => role.name).join(', ') || '—'}</td>
             <td><span className={`badge text-bg-${user.isActive ? 'success' : 'secondary'}`}>{user.isActive ? 'Active' : 'Inactive'}</span></td>
             <td className="text-end"><div className="d-flex justify-content-end align-items-center gap-2">
-              <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(user)} aria-label={`Edit ${user.email}`} title="Edit user"><i className="bi bi-pencil" /></button>
-              {user.isActive && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => { if (window.confirm(`Deactivate ${user.email}?`)) deactivate.mutate(user.id); }} aria-label={`Deactivate ${user.email}`} title="Deactivate user"><i className="bi bi-trash" /></button>}
-              {!user.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => { if (window.confirm(`Activate ${user.email}?`)) activate.mutate(user.id); }} aria-label={`Activate ${user.email}`} title="Activate user"><i className="bi bi-arrow-counterclockwise" /></button>}
+              {canUpdate && canManageUser && <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(user)} aria-label={`Edit ${user.email}`} title="Edit user"><i className="bi bi-pencil" /></button>}
+              {canDeactivate && canManageUser && user.isActive && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => { if (window.confirm(`Deactivate ${user.email}?`)) deactivate.mutate(user.id); }} aria-label={`Deactivate ${user.email}`} title="Deactivate user"><i className="bi bi-trash" /></button>}
+              {canUpdate && canManageUser && !user.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => { if (window.confirm(`Activate ${user.email}?`)) activate.mutate(user.id); }} aria-label={`Activate ${user.email}`} title="Activate user"><i className="bi bi-arrow-counterclockwise" /></button>}
             </div></td>
-          </tr>)}</tbody>
+          </tr>;
+          })}</tbody>
         </table>}
       </div>
       {users.data && <div className="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2"><span className="text-body-secondary small">{users.data.total} user(s)</span><nav aria-label="User pagination"><ul className="pagination pagination-sm mb-0"><li className={`page-item ${page <= 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page - 1)}>Previous</button></li><li className="page-item disabled"><span className="page-link">Page {page} of {users.data.totalPages}</span></li><li className={`page-item ${page >= users.data.totalPages ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPage(page + 1)}>Next</button></li></ul></nav></div>}
     </section>
-    {editing && <UserModal editing={editing} form={form} roles={roles.data?.roles ?? []} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
+    {editing && <UserModal editing={editing} form={form} roles={roles.data?.roles ?? []} availableUserTypes={availableUserTypes} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
   </>;
 }
 
-function UserModal({ editing, form, roles, saving, onClose, onSave }: {
+function UserModal({ editing, form, roles, availableUserTypes, saving, onClose, onSave }: {
   editing: ManagedUser | 'new';
   form: ReturnType<typeof useForm<UserFormValues>>;
   roles: Array<{ id: string; name: string }>;
+  availableUserTypes: readonly UserType[];
   saving: boolean;
   onClose: () => void;
   onSave: (values: UserFormValues) => void;
@@ -143,7 +154,7 @@ function UserModal({ editing, form, roles, saving, onClose, onSave }: {
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="user-type">User type</label>
-                <select id="user-type" className={`form-select ${form.formState.errors.userType ? 'is-invalid' : ''}`} {...form.register('userType')}>{userTypes.map((userType) => <option key={userType} value={userType}>{userTypeLabels[userType]}</option>)}</select>
+                <select id="user-type" className={`form-select ${form.formState.errors.userType ? 'is-invalid' : ''}`} {...form.register('userType')}>{availableUserTypes.map((userType) => <option key={userType} value={userType}>{userTypeLabels[userType]}</option>)}</select>
                 {form.formState.errors.userType && <div className="invalid-feedback">{form.formState.errors.userType.message}</div>}
               </div>
               <div className="col-md-6">

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
+import { hasPermission, useCurrentUser } from '../../../app/current-user-context';
 import { rolesApi, type ManagedRole } from '../api/roles-api';
 
 const roleSchema = z.object({
@@ -17,6 +18,8 @@ const emptyValues: RoleFormValues = { name: '', description: '' };
 export function RolesPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const currentUser = useCurrentUser();
+  const canManage = hasPermission(currentUser, 'roles.manage');
   const [editing, setEditing] = useState<ManagedRole | 'new' | null>(null);
   const roles = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list });
   const form = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: emptyValues });
@@ -57,11 +60,11 @@ export function RolesPage() {
   });
 
   return <>
-    <div className="d-flex justify-content-end mb-3">
+    {canManage && <div className="d-flex justify-content-end mb-3">
       <button className="btn btn-primary" onClick={() => setEditing('new')}>
         <i className="bi bi-plus-circle-fill me-1" />Add role
       </button>
-    </div>
+    </div>}
     <section className="card">
       <div className="card-body table-responsive p-0">
         {roles.isPending && <div className="p-3 text-body-secondary">Loading roles…</div>}
@@ -75,11 +78,11 @@ export function RolesPage() {
             <td className="text-end text-nowrap">
               <div className="d-flex justify-content-end align-items-center gap-2">
               <Link className="btn btn-outline-primary btn-sm" to={`/roles/${role.id}`} aria-label={`View ${role.name}`} title="View role"><i className="bi bi-eye" /></Link>
-              <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditing(role)} aria-label={`Edit ${role.name}`} title="Edit role"><i className="bi bi-pencil" /></button>
-              {role.isActive && role.name !== 'System Administrator' && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => {
+              {canManage && <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditing(role)} aria-label={`Edit ${role.name}`} title="Edit role"><i className="bi bi-pencil" /></button>}
+              {canManage && role.isActive && role.name !== 'System Administrator' && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => {
                 if (window.confirm(`Deactivate ${role.name}?`)) deactivate.mutate(role.id);
               }} aria-label={`Deactivate ${role.name}`} title="Deactivate role"><i className="bi bi-trash" /></button>}
-              {!role.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => {
+              {canManage && !role.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => {
                 if (window.confirm(`Activate ${role.name}?`)) activate.mutate(role.id);
               }} aria-label={`Activate ${role.name}`} title="Activate role"><i className="bi bi-arrow-counterclockwise" /></button>}
               </div>

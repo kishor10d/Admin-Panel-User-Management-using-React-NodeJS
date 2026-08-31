@@ -5,8 +5,10 @@ import { Link } from 'react-router-dom';
 import { authApi, type CurrentUser } from '../../features/auth/api/auth-api';
 import { setLogoutIntent, setSidebarCollapsed, type RootState } from '../../app/store';
 import { useToast } from '../../app/toast-provider';
+import { hasPermission, useCurrentUser } from '../../app/current-user-context';
 
 export function TopNavbar({ user }: { user: Pick<CurrentUser, 'email' | 'name' | 'roles'> }) {
+  const currentUser = useCurrentUser();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const sidebarCollapsed = useSelector((state: RootState) => state.app.sidebarCollapsed);
@@ -27,7 +29,7 @@ export function TopNavbar({ user }: { user: Pick<CurrentUser, 'email' | 'name' |
         <ul className="navbar-nav">
           <li className="nav-item"><button className="nav-link border-0 bg-transparent" onClick={() => dispatch(setSidebarCollapsed(!sidebarCollapsed))} aria-label="Toggle sidebar"><i className="bi bi-list" /></button></li>
           <li className="nav-item d-none d-md-block"><Link className="nav-link" to="/">Dashboard</Link></li>
-          <li className="nav-item d-none d-md-block"><Link className="nav-link" to="/users">Users</Link></li>
+          {hasPermission(currentUser, 'users.read') && <li className="nav-item d-none d-md-block"><Link className="nav-link" to="/users">Users</Link></li>}
         </ul>
         <ul className="navbar-nav ms-auto">
           <li className="nav-item dropdown user-menu">

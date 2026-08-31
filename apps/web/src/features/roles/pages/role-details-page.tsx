@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useToast } from '../../../app/toast-provider';
+import { hasPermission, useCurrentUser } from '../../../app/current-user-context';
 import { rolesApi, type PermissionItem } from '../api/roles-api';
 
 const actionLabels: Record<string, string> = {
@@ -25,6 +26,8 @@ export function RoleDetailsPage() {
   const { roleId = '' } = useParams();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const currentUser = useCurrentUser();
+  const canManage = hasPermission(currentUser, 'roles.manage');
   const role = useQuery({ queryKey: ['roles', roleId], queryFn: () => rolesApi.get(roleId), enabled: Boolean(roleId) });
   const permissions = useQuery({ queryKey: ['permissions'], queryFn: rolesApi.permissions });
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([]);
@@ -84,7 +87,7 @@ export function RoleDetailsPage() {
     </div>
     <div className="col-12">
       <section className="card">
-        <div className="card-header"><h3 className="card-title">Permissions</h3><div className="card-tools"><span className="text-body-secondary small">Select the actions this role can perform.</span></div></div>
+        <div className="card-header"><h3 className="card-title">Permissions</h3><div className="card-tools"><span className="text-body-secondary small">{canManage ? 'Select the actions this role can perform.' : 'Assigned actions for this role.'}</span></div></div>
         <div className="card-body p-0">
           {permissions.isPending && <div className="p-3 text-body-secondary">Loading permissions…</div>}
           {permissions.isError && <div className="alert alert-danger m-3 mb-0">{permissions.error.message}</div>}
@@ -94,12 +97,14 @@ export function RoleDetailsPage() {
               const byAction = new Map(modulePermissions.map((permission) => [permission.key.split('.')[1], permission]));
               return <tr key={module}><th scope="row">{readableModule(module)}</th>{actions.map((action) => {
                 const permission = byAction.get(action);
-                return <td className="text-center" key={action}>{permission && <div className="form-check d-inline-flex mb-0"><input className="form-check-input" type="checkbox" id={`permission-${permission.id}`} checked={selected.has(permission.id)} onChange={(event) => togglePermission(permission.id, event.target.checked)} aria-label={readablePermission(permission)} title={readablePermission(permission)} /></div>}</td>;
+                return <td className="text-center" key={action}>{permission && (canManage
+                  ? <div className="form-check d-inline-flex mb-0"><input className="form-check-input" type="checkbox" id={`permission-${permission.id}`} checked={selected.has(permission.id)} onChange={(event) => togglePermission(permission.id, event.target.checked)} aria-label={readablePermission(permission)} title={readablePermission(permission)} /></div>
+                  : <i className={`bi ${selected.has(permission.id) ? 'bi-check-lg text-success' : 'bi-dash text-body-secondary'}`} aria-label={selected.has(permission.id) ? `${readablePermission(permission)} allowed` : `${readablePermission(permission)} not allowed`} />)}</td>;
               })}</tr>;
             })}</tbody>
           </table></div>}
         </div>
-        <div className="card-footer d-flex justify-content-between"><Link className="btn btn-secondary" to="/roles">Back to roles</Link><button className="btn btn-primary" disabled={permissions.isPending || savePermissions.isPending} onClick={() => savePermissions.mutate()}>{savePermissions.isPending ? 'Saving…' : 'Save permissions'}</button></div>
+        <div className="card-footer d-flex justify-content-between"><Link className="btn btn-secondary" to="/roles">Back to roles</Link>{canManage && <button className="btn btn-primary" disabled={permissions.isPending || savePermissions.isPending} onClick={() => savePermissions.mutate()}>{savePermissions.isPending ? 'Saving…' : 'Save permissions'}</button>}</div>
       </section>
     </div>
   </div>;

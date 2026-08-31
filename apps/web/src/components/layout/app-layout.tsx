@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../app/store';
+import { CurrentUserProvider } from '../../app/current-user-context';
 import type { CurrentUser } from '../../features/auth/api/auth-api';
 import { AppFooter } from './app-footer';
 import { PageHeader } from './page-header';
@@ -10,7 +11,7 @@ import { TopNavbar } from './top-navbar';
 export function AppLayout({ user }: { user: CurrentUser }) {
   const sidebarCollapsed = useSelector((state: RootState) => state.app.sidebarCollapsed);
 
-  return (
+  return <CurrentUserProvider user={user}>
     <div className={`app-wrapper sidebar-expand-lg ${sidebarCollapsed ? 'sidebar-collapse' : ''}`}>
       <TopNavbar user={user} />
       <Sidebar />
@@ -20,5 +21,5 @@ export function AppLayout({ user }: { user: CurrentUser }) {
       </main>
       <AppFooter />
     </div>
-  );
+  </CurrentUserProvider>;
 }

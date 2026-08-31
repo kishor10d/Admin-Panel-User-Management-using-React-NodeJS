@@ -5,6 +5,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppLayout } from '../components/layout/app-layout';
 import { authApi } from '../features/auth/api/auth-api';
 import { LoginPage } from '../features/auth/pages/login-page';
+import { AccessDeniedPage } from '../features/auth/pages/access-denied-page';
 import { ForgotPasswordPage, ResetPasswordPage } from '../features/auth/pages/password-pages';
 import { DashboardPage } from '../features/dashboard/pages/dashboard-page';
 import { LoginHistoryPage } from '../features/login-history/pages/login-history-page';
@@ -14,6 +15,7 @@ import { RolesPage } from '../features/roles/pages/roles-page';
 import { UsersPage } from '../features/users/pages/users-page';
 import { setLogoutIntent, type RootState } from './store';
 import { useToast } from './toast-provider';
+import { PermissionGate } from './permission-gate';
 
 export function App() {
   return <Routes>
@@ -54,5 +56,5 @@ function AuthenticatedApp() {
   if (currentUser.isPending) return <main className="min-vh-100 d-flex align-items-center justify-content-center bg-body-secondary">Loading CIAS Admin…</main>;
   if (currentUser.isError) return location.pathname === '/' ? <LoginPage /> : <Navigate to="/" replace />;
 
-  return <Routes><Route element={<AppLayout user={currentUser.data.user} />}><Route index element={<DashboardPage />} /><Route path="users" element={<UsersPage />} /><Route path="roles" element={<RolesPage />} /><Route path="roles/:roleId" element={<RoleDetailsPage />} /><Route path="login-history" element={<LoginHistoryPage />} /><Route path="profile" element={<ProfilePage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>;
+  return <Routes><Route element={<AppLayout user={currentUser.data.user} />}><Route index element={<DashboardPage />} /><Route path="access-denied" element={<AccessDeniedPage />} /><Route element={<PermissionGate permission="users.read" />}><Route path="users" element={<UsersPage />} /></Route><Route element={<PermissionGate permission="roles.read" />}><Route path="roles" element={<RolesPage />} /><Route path="roles/:roleId" element={<RoleDetailsPage />} /></Route><Route element={<PermissionGate permission="login-history.read" />}><Route path="login-history" element={<LoginHistoryPage />} /></Route><Route path="profile" element={<ProfilePage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>;
 }

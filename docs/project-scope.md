@@ -157,6 +157,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added protected user-management APIs for listing, creating, updating, and deactivating users.
 - [x] Added user activation and deactivation actions.
 - [x] Added persisted Regular, System Administrator, and Service user types, including System Administrator authorization bypass and protected management rules.
+- [x] Added matching web authorization gates: permission-filtered navigation and dashboard links, guarded routes with an access-denied page, and permission-filtered user/role actions and controls.
 - [x] Added protected role lookup for user-role assignment.
 - [x] Added the React user-management screen with search, pagination, create, edit, role selection, and deactivation actions.
 - [x] Added protected role-management APIs for listing, creating, editing, and deactivating roles.
