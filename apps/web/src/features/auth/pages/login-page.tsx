@@ -7,7 +7,7 @@ import { authApi } from '../api/auth-api';
 import { passwordSchema } from '../../../lib/password-policy';
 
 const loginSchema = z.object({
-  email: z.string().email('Enter a valid email address.'),
+  email: z.string().trim().min(1, 'Enter an email address.').email('Enter a valid email address.').max(254),
   password: passwordSchema,
 });
 type LoginValues = z.infer<typeof loginSchema>;
@@ -29,12 +29,12 @@ export function LoginPage() {
           <form onSubmit={form.handleSubmit((values) => login.mutate(values))}>
             {login.isError && <div className="alert alert-danger py-2" role="alert">{login.error.message}</div>}
             <div className="input-group mb-3">
-              <input id="login-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" placeholder="Email" autoComplete="email" aria-label="Email" {...form.register('email')} />
+              <input id="login-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" placeholder="Email" autoComplete="email" aria-label="Email" maxLength={254} {...form.register('email')} />
               <div className="input-group-text"><span className="bi bi-envelope" /></div>
               {form.formState.errors.email && <div className="invalid-feedback d-block">{form.formState.errors.email.message}</div>}
             </div>
             <div className="input-group mb-3">
-              <input id="login-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" placeholder="Password" autoComplete="current-password" aria-label="Password" {...form.register('password')} />
+              <input id="login-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" placeholder="Password" autoComplete="current-password" aria-label="Password" maxLength={128} {...form.register('password')} />
               <div className="input-group-text"><span className="bi bi-lock-fill" /></div>
               {form.formState.errors.password && <div className="invalid-feedback d-block">{form.formState.errors.password.message}</div>}
             </div>

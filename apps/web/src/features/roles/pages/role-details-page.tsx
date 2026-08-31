@@ -73,7 +73,7 @@ export function RoleDetailsPage() {
   return <div className="row">
     <div className="col-12">
       <section className="card card-primary card-outline">
-        <div className="card-header"><h3 className="card-title">Role information</h3></div>
+        <div className="card-header"><h3 className="card-title">Role information</h3><div className="card-tools"><Link className="btn btn-outline-secondary btn-sm" to="/roles">Back to roles</Link></div></div>
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-6"><div className="text-body-secondary small">Role name</div><strong>{role.data.name}</strong></div>
@@ -104,7 +104,7 @@ export function RoleDetailsPage() {
             })}</tbody>
           </table></div>}
         </div>
-        <div className="card-footer d-flex justify-content-between"><Link className="btn btn-secondary" to="/roles">Back to roles</Link>{canManage && <button className="btn btn-primary" disabled={permissions.isPending || savePermissions.isPending} onClick={() => savePermissions.mutate()}>{savePermissions.isPending ? 'Saving…' : 'Save permissions'}</button>}</div>
+        {canManage && <div className="card-footer"><button className="btn btn-primary" disabled={permissions.isPending || savePermissions.isPending} onClick={() => savePermissions.mutate()}>{savePermissions.isPending ? 'Saving…' : 'Save permissions'}</button></div>}
       </section>
     </div>
   </div>;

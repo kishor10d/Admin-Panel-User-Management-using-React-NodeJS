@@ -7,12 +7,13 @@ import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
 import { hasPermission, useCurrentUser } from '../../../app/current-user-context';
 import { DataTableFooter, EmptyTableRow, SortableTableHeader } from '../../../components/ui/data-table';
+import { ConfirmationModal } from '../../../components/ui/confirmation-modal';
 import { useDebouncedValue } from '../../../lib/use-debounced-value';
 import { rolesApi, type ListRolesOptions, type ManagedRole } from '../api/roles-api';
 
 const roleSchema = z.object({
   name: z.string().trim().min(2, 'Enter a role name.').max(50),
-  description: z.string().max(255).optional(),
+  description: z.string().trim().max(255).optional(),
 });
 type RoleFormValues = z.infer<typeof roleSchema>;
 const emptyValues: RoleFormValues = { name: '', description: '' };
@@ -28,6 +29,7 @@ export function RolesPage() {
   const [sortBy, setSortBy] = useState<ListRolesOptions['sortBy']>('name');
   const [sortOrder, setSortOrder] = useState<ListRolesOptions['sortOrder']>('ASC');
   const [editing, setEditing] = useState<ManagedRole | 'new' | null>(null);
+  const [confirmation, setConfirmation] = useState<{ role: ManagedRole; action: 'activate' | 'deactivate' } | null>(null);
   const debouncedSearch = useDebouncedValue(search);
   const roles = useQuery({ queryKey: ['roles', page, limit, debouncedSearch, sortBy, sortOrder], queryFn: () => rolesApi.list({ page, limit, search: debouncedSearch, includeInactive: true, sortBy, sortOrder }) });
   const form = useForm<RoleFormValues>({ resolver: zodResolver(roleSchema), defaultValues: emptyValues });
@@ -54,6 +56,7 @@ export function RolesPage() {
     mutationFn: rolesApi.deactivate,
     onSuccess: (role) => {
       toast.success(`${role.name} was deactivated.`);
+      setConfirmation(null);
       refresh();
     },
     onError: (error) => toast.error(error.message),
@@ -62,6 +65,7 @@ export function RolesPage() {
     mutationFn: rolesApi.activate,
     onSuccess: (role) => {
       toast.success(`${role.name} was activated.`);
+      setConfirmation(null);
       refresh();
     },
     onError: (error) => toast.error(error.message),
@@ -93,12 +97,8 @@ export function RolesPage() {
               <div className="d-flex justify-content-end align-items-center gap-2">
               <Link className="btn btn-outline-primary btn-sm" to={`/roles/${role.id}`} aria-label={`View ${role.name}`} title="View role"><i className="bi bi-eye" /></Link>
               {canManage && <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditing(role)} aria-label={`Edit ${role.name}`} title="Edit role"><i className="bi bi-pencil" /></button>}
-              {canManage && role.isActive && role.name !== 'System Administrator' && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => {
-                if (window.confirm(`Deactivate ${role.name}?`)) deactivate.mutate(role.id);
-              }} aria-label={`Deactivate ${role.name}`} title="Deactivate role"><i className="bi bi-trash" /></button>}
-              {canManage && !role.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => {
-                if (window.confirm(`Activate ${role.name}?`)) activate.mutate(role.id);
-              }} aria-label={`Activate ${role.name}`} title="Activate role"><i className="bi bi-arrow-counterclockwise" /></button>}
+              {canManage && role.isActive && role.name !== 'System Administrator' && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => setConfirmation({ role, action: 'deactivate' })} aria-label={`Deactivate ${role.name}`} title="Deactivate role"><i className="bi bi-trash" /></button>}
+              {canManage && !role.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => setConfirmation({ role, action: 'activate' })} aria-label={`Activate ${role.name}`} title="Activate role"><i className="bi bi-arrow-counterclockwise" /></button>}
               </div>
             </td>
           </tr>)}{roles.data.roles.length === 0 && <EmptyTableRow colSpan={4} message="No roles found." />}</tbody>
@@ -107,6 +107,7 @@ export function RolesPage() {
       {roles.data && <DataTableFooter itemLabel="roles" total={roles.data.total} page={page} totalPages={roles.data.totalPages} limit={limit} onPageChange={setPage} onLimitChange={(nextLimit) => { setLimit(nextLimit); setPage(1); }} />}
     </section>
     {editing && <RoleModal editing={editing} form={form} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
+    {confirmation && <ConfirmationModal title={`${confirmation.action === 'activate' ? 'Activate' : 'Deactivate'} role`} message={<>Are you sure you want to {confirmation.action} <strong>{confirmation.role.name}</strong>?</>} confirmLabel={`${confirmation.action === 'activate' ? 'Activate' : 'Deactivate'} role`} variant={confirmation.action === 'activate' ? 'success' : 'danger'} pending={confirmation.action === 'activate' ? activate.isPending : deactivate.isPending} onConfirm={() => confirmation.action === 'activate' ? activate.mutate(confirmation.role.id) : deactivate.mutate(confirmation.role.id)} onCancel={() => setConfirmation(null)} />}
   </>;
 }
 
@@ -125,12 +126,12 @@ function RoleModal({ editing, form, saving, onClose, onSave }: {
           <div className="modal-body">
             <div className="mb-3">
               <label className="form-label" htmlFor="role-name">Role name</label>
-              <input id="role-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} {...form.register('name')} />
+              <input id="role-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} maxLength={50} {...form.register('name')} />
               {form.formState.errors.name && <div className="invalid-feedback">{form.formState.errors.name.message}</div>}
             </div>
             <div>
               <label className="form-label" htmlFor="role-description">Description</label>
-              <textarea id="role-description" className="form-control" rows={3} {...form.register('description')} />
+              <textarea id="role-description" className="form-control" rows={3} maxLength={255} {...form.register('description')} />
             </div>
           </div>
           <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save role'}</button></div>

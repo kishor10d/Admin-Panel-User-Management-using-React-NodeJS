@@ -8,9 +8,9 @@ import { ChangePasswordForm } from '../../auth/components/change-password-form';
 import { useToast } from '../../../app/toast-provider';
 
 const profileSchema = z.object({
-  name: z.string().trim().max(128, 'Name must be 128 characters or fewer.'),
-  email: z.string().email('Enter a valid email address.'),
-  mobile: z.string().max(20, 'Mobile must be 20 characters or fewer.'),
+  name: z.string().trim().min(2, 'Enter a name.').max(128, 'Name must be 128 characters or fewer.'),
+  email: z.string().trim().min(1, 'Enter an email address.').email('Enter a valid email address.').max(254),
+  mobile: z.string().regex(/^\d{0,15}$/, 'Mobile must contain only digits and be 15 digits or fewer.'),
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
@@ -81,17 +81,17 @@ export function ProfilePage() {
                 <form className="row g-3" onSubmit={form.handleSubmit((values) => saveProfile.mutate(values))}>
                   <div className="col-md-6">
                     <label className="form-label" htmlFor="profile-name">Full name</label>
-                    <input id="profile-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} {...form.register('name')} />
+                    <input id="profile-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} maxLength={128} {...form.register('name')} />
                     {form.formState.errors.name && <div className="invalid-feedback">{form.formState.errors.name.message}</div>}
                   </div>
                   <div className="col-md-6">
                     <label className="form-label" htmlFor="profile-email">Email</label>
-                    <input id="profile-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" autoComplete="email" {...form.register('email')} />
+                    <input id="profile-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" autoComplete="email" maxLength={254} {...form.register('email')} />
                     {form.formState.errors.email && <div className="invalid-feedback">{form.formState.errors.email.message}</div>}
                   </div>
                   <div className="col-md-6">
                     <label className="form-label" htmlFor="profile-mobile">Mobile</label>
-                    <input id="profile-mobile" className={`form-control ${form.formState.errors.mobile ? 'is-invalid' : ''}`} autoComplete="tel" {...form.register('mobile')} />
+                    <input id="profile-mobile" className={`form-control ${form.formState.errors.mobile ? 'is-invalid' : ''}`} type="tel" inputMode="numeric" autoComplete="tel" maxLength={15} onInput={(event) => { event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 15); }} {...form.register('mobile', { setValueAs: (value) => typeof value === 'string' ? value.replace(/\D/g, '').slice(0, 15) : value })} />
                     {form.formState.errors.mobile && <div className="invalid-feedback">{form.formState.errors.mobile.message}</div>}
                   </div>
                   <div className="col-md-6">

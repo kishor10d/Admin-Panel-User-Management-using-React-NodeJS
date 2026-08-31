@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
 import { hasPermission, isSystemAdministrator, useCurrentUser } from '../../../app/current-user-context';
 import { DataTableFooter, EmptyTableRow, SortableTableHeader } from '../../../components/ui/data-table';
+import { ConfirmationModal } from '../../../components/ui/confirmation-modal';
 import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '../../../lib/password-policy';
 import { useDebouncedValue } from '../../../lib/use-debounced-value';
 import { usersApi, type ListUsersOptions, type ManagedUser, type UserType } from '../api/users-api';
@@ -20,17 +21,17 @@ const userTypeLabels: Record<UserType, string> = {
 type UserFormValues = { email: string; name: string; mobile: string; userType: UserType; password: string; roleId: string };
 
 const updateUserSchema: z.ZodType<UserFormValues> = z.object({
-  email: z.string().email('Enter a valid email address.'),
-  name: z.string().max(128),
-  mobile: z.string().max(20),
+  email: z.string().trim().min(1, 'Enter an email address.').email('Enter a valid email address.').max(254),
+  name: z.string().trim().min(2, 'Enter a name.').max(128),
+  mobile: z.string().regex(/^\d{0,15}$/, 'Mobile must contain only digits and be 15 digits or fewer.'),
   userType: z.enum(userTypes),
   password: z.string().refine((value) => !value || isValidPassword(value), PASSWORD_REQUIREMENTS_MESSAGE),
   roleId: z.string().uuid('Select a role.'),
 });
 const createUserSchema: z.ZodType<UserFormValues> = z.object({
-  email: z.string().trim().min(1, 'Enter an email address.').email('Enter a valid email address.'),
+  email: z.string().trim().min(1, 'Enter an email address.').email('Enter a valid email address.').max(254),
   name: z.string().trim().min(1, 'Enter a name.').max(128),
-  mobile: z.string().trim().min(1, 'Enter a mobile number.').max(20),
+  mobile: z.string().trim().min(1, 'Enter a mobile number.').regex(/^\d{1,15}$/, 'Mobile must contain only digits and be 15 digits or fewer.'),
   userType: z.enum(userTypes),
   password: z.string().min(1, 'Enter a password.').refine(isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE),
   roleId: z.string().uuid('Select a role.'),
@@ -52,6 +53,7 @@ export function UsersPage() {
   const [sortBy, setSortBy] = useState<ListUsersOptions['sortBy']>('createdAt');
   const [sortOrder, setSortOrder] = useState<ListUsersOptions['sortOrder']>('DESC');
   const [editing, setEditing] = useState<ManagedUser | 'new' | null>(null);
+  const [confirmation, setConfirmation] = useState<{ user: ManagedUser; action: 'activate' | 'deactivate' } | null>(null);
   const debouncedSearch = useDebouncedValue(search);
   const users = useQuery({ queryKey: ['users', page, limit, debouncedSearch, sortBy, sortOrder], queryFn: () => usersApi.list({ page, limit, search: debouncedSearch, sortBy, sortOrder }) });
   const roles = useQuery({ queryKey: ['roles'], queryFn: usersApi.roles, enabled: canCreate || canUpdate });
@@ -81,6 +83,7 @@ export function UsersPage() {
     mutationFn: usersApi.deactivate,
     onSuccess: (user) => {
       toast.success(`${user.email} was deactivated.`);
+      setConfirmation(null);
       refresh();
     },
     onError: (error) => toast.error(error.message),
@@ -89,6 +92,7 @@ export function UsersPage() {
     mutationFn: usersApi.activate,
     onSuccess: (user) => {
       toast.success(`${user.email} was activated.`);
+      setConfirmation(null);
       refresh();
     },
     onError: (error) => toast.error(error.message),
@@ -120,8 +124,8 @@ export function UsersPage() {
             <td><span className={`badge text-bg-${user.isActive ? 'success' : 'secondary'}`}>{user.isActive ? 'Active' : 'Inactive'}</span></td>
             <td className="text-end"><div className="d-flex justify-content-end align-items-center gap-2">
               {canUpdate && canManageUser && <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(user)} aria-label={`Edit ${user.email}`} title="Edit user"><i className="bi bi-pencil" /></button>}
-              {canDeactivate && canManageUser && user.isActive && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => { if (window.confirm(`Deactivate ${user.email}?`)) deactivate.mutate(user.id); }} aria-label={`Deactivate ${user.email}`} title="Deactivate user"><i className="bi bi-trash" /></button>}
-              {canUpdate && canManageUser && !user.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => { if (window.confirm(`Activate ${user.email}?`)) activate.mutate(user.id); }} aria-label={`Activate ${user.email}`} title="Activate user"><i className="bi bi-arrow-counterclockwise" /></button>}
+              {canDeactivate && canManageUser && user.isActive && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => setConfirmation({ user, action: 'deactivate' })} aria-label={`Deactivate ${user.email}`} title="Deactivate user"><i className="bi bi-trash" /></button>}
+              {canUpdate && canManageUser && !user.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => setConfirmation({ user, action: 'activate' })} aria-label={`Activate ${user.email}`} title="Activate user"><i className="bi bi-arrow-counterclockwise" /></button>}
             </div></td>
           </tr>;
           })}{users.data.items.length === 0 && <EmptyTableRow colSpan={6} message="No users found." />}</tbody>
@@ -130,6 +134,7 @@ export function UsersPage() {
       {users.data && <DataTableFooter itemLabel="users" total={users.data.total} page={page} totalPages={users.data.totalPages} limit={limit} onPageChange={setPage} onLimitChange={changeLimit} />}
     </section>
     {editing && <UserModal editing={editing} form={form} roles={roles.data?.roles ?? []} rolesLoading={roles.isPending} rolesError={roles.isError ? roles.error.message : undefined} availableUserTypes={availableUserTypes} saving={save.isPending} onClose={() => setEditing(null)} onSave={(values) => save.mutate(values)} />}
+    {confirmation && <ConfirmationModal title={`${confirmation.action === 'activate' ? 'Activate' : 'Deactivate'} user`} message={<>Are you sure you want to {confirmation.action} <strong>{confirmation.user.email}</strong>?</>} confirmLabel={`${confirmation.action === 'activate' ? 'Activate' : 'Deactivate'} user`} variant={confirmation.action === 'activate' ? 'success' : 'danger'} pending={confirmation.action === 'activate' ? activate.isPending : deactivate.isPending} onConfirm={() => confirmation.action === 'activate' ? activate.mutate(confirmation.user.id) : deactivate.mutate(confirmation.user.id)} onCancel={() => setConfirmation(null)} />}
   </>;
 }
 
@@ -153,17 +158,17 @@ function UserModal({ editing, form, roles, rolesLoading, rolesError, availableUs
             <div className="row g-3">
               <div className="col-12">
                 <label className="form-label" htmlFor="user-email">Email</label>
-                <input id="user-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" {...form.register('email')} />
+                <input id="user-email" className={`form-control ${form.formState.errors.email ? 'is-invalid' : ''}`} type="email" maxLength={254} {...form.register('email')} />
                 {form.formState.errors.email && <div className="invalid-feedback">{form.formState.errors.email.message}</div>}
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="user-name">Name</label>
-                <input id="user-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} {...form.register('name')} />
+                <input id="user-name" className={`form-control ${form.formState.errors.name ? 'is-invalid' : ''}`} maxLength={128} {...form.register('name')} />
                 {form.formState.errors.name && <div className="invalid-feedback">{form.formState.errors.name.message}</div>}
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="user-mobile">Mobile</label>
-                <input id="user-mobile" className={`form-control ${form.formState.errors.mobile ? 'is-invalid' : ''}`} {...form.register('mobile')} />
+                <input id="user-mobile" className={`form-control ${form.formState.errors.mobile ? 'is-invalid' : ''}`} type="tel" inputMode="numeric" autoComplete="tel" maxLength={15} onInput={(event) => { event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 15); }} {...form.register('mobile', { setValueAs: (value) => typeof value === 'string' ? value.replace(/\D/g, '').slice(0, 15) : value })} />
                 {form.formState.errors.mobile && <div className="invalid-feedback">{form.formState.errors.mobile.message}</div>}
               </div>
               <div className="col-md-6">
@@ -179,7 +184,7 @@ function UserModal({ editing, form, roles, rolesLoading, rolesError, availableUs
               </div>
               <div className="col-12">
                 <label className="form-label" htmlFor="user-password">{editing === 'new' ? 'Password' : 'New password (optional)'}</label>
-                <input id="user-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" autoComplete="new-password" {...form.register('password')} />
+                <input id="user-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" autoComplete="new-password" maxLength={128} {...form.register('password')} />
                 {form.formState.errors.password && <div className="invalid-feedback">{form.formState.errors.password.message}</div>}
               </div>
             </div>

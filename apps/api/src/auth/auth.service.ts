@@ -78,6 +78,7 @@ export class AuthService {
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) throw new UnauthorizedException('Current password is incorrect.');
+    if (await bcrypt.compare(newPassword, user.passwordHash)) throw new BadRequestException('New password must be different from your current password.');
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     user.mustChangePassword = false;
     await this.users.save(user);
