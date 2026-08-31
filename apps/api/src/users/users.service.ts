@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { In, Repository } from 'typeorm';
@@ -6,6 +6,8 @@ import { Role, User, UserRole } from '../database/entities';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import type { AuthUser } from '../auth/auth-user.type';
+import type { UserType } from '../common/user-type';
 
 @Injectable()
 export class UsersService {
@@ -31,7 +33,9 @@ export class UsersService {
     };
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, actingUser: AuthUser) {
+    const userType = dto.userType ?? 'REGULAR';
+    this.assertCanManageUserType(userType, actingUser);
     const email = dto.email.trim().toLowerCase();
     if (await this.users.exist({ where: { email } })) throw new ConflictException('A user with this email already exists.');
     await this.assertRolesExist(dto.roleIds);
@@ -39,6 +43,7 @@ export class UsersService {
       email,
       name: dto.name?.trim() || null,
       mobile: dto.mobile?.trim() || null,
+      userType,
       passwordHash: await bcrypt.hash(dto.password, 12),
       isActive: true,
       mustChangePassword: true,
@@ -47,10 +52,11 @@ export class UsersService {
     return this.present(user);
   }
 
-  async update(id: string, dto: UpdateUserDto, actingUserId: string) {
+  async update(id: string, dto: UpdateUserDto, actingUser: AuthUser) {
     const user = await this.users.findOne({ where: { id } });
     if (!user) throw new NotFoundException('User not found.');
-    if (dto.isActive === false && id === actingUserId) throw new BadRequestException('You cannot deactivate your own account.');
+    this.assertCanManageUserType(user.userType, actingUser);
+    if (dto.isActive === false && id === actingUser.id) throw new BadRequestException('You cannot deactivate your own account.');
 
     if (dto.email) {
       const email = dto.email.trim().toLowerCase();
@@ -60,6 +66,10 @@ export class UsersService {
     }
     if (dto.name !== undefined) user.name = dto.name.trim() || null;
     if (dto.mobile !== undefined) user.mobile = dto.mobile.trim() || null;
+    if (dto.userType !== undefined) {
+      this.assertCanManageUserType(dto.userType, actingUser);
+      user.userType = dto.userType;
+    }
     if (dto.isActive !== undefined) user.isActive = dto.isActive;
     if (dto.password) {
       user.passwordHash = await bcrypt.hash(dto.password, 12);
@@ -71,12 +81,12 @@ export class UsersService {
     return this.present(updated);
   }
 
-  async deactivate(id: string, actingUserId: string) {
-    return this.update(id, { isActive: false }, actingUserId);
+  async deactivate(id: string, actingUser: AuthUser) {
+    return this.update(id, { isActive: false }, actingUser);
   }
 
-  async activate(id: string, actingUserId: string) {
-    return this.update(id, { isActive: true }, actingUserId);
+  async activate(id: string, actingUser: AuthUser) {
+    return this.update(id, { isActive: true }, actingUser);
   }
 
   private async assertRolesExist(roleIds: string[]) {
@@ -116,11 +126,18 @@ export class UsersService {
       email: user.email,
       name: user.name,
       mobile: user.mobile,
+      userType: user.userType,
       isActive: user.isActive,
       mustChangePassword: user.mustChangePassword,
       roles,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  private assertCanManageUserType(userType: UserType, actingUser: AuthUser) {
+    if (userType === 'SYSTEM_ADMINISTRATOR' && actingUser.userType !== 'SYSTEM_ADMINISTRATOR') {
+      throw new ForbiddenException('Only a System Administrator can manage System Administrator accounts.');
+    }
   }
 }

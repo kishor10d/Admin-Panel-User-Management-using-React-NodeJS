@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsBoolean, IsEmail, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
+import { ArrayMinSize, IsArray, IsBoolean, IsEmail, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
 import { PASSWORD_PATTERN, PASSWORD_REQUIREMENTS_MESSAGE } from '../../common/password-policy';
+import { USER_TYPES, type UserType } from '../../common/user-type';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -17,6 +18,10 @@ export class UpdateUserDto {
   @IsString()
   @MaxLength(20)
   mobile?: string;
+
+  @IsOptional()
+  @IsIn(USER_TYPES)
+  userType?: UserType;
 
   @IsOptional()
   @IsString()

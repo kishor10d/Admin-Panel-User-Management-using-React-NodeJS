@@ -5,14 +5,22 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useToast } from '../../../app/toast-provider';
 import { isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE } from '../../../lib/password-policy';
-import { usersApi, type ManagedUser } from '../api/users-api';
+import { usersApi, type ManagedUser, type UserType } from '../api/users-api';
 
-type UserFormValues = { email: string; name: string; mobile: string; password: string; roleId: string };
+const userTypes = ['REGULAR', 'SYSTEM_ADMINISTRATOR', 'SERVICE'] as const;
+const userTypeLabels: Record<UserType, string> = {
+  REGULAR: 'Regular user',
+  SYSTEM_ADMINISTRATOR: 'System administrator',
+  SERVICE: 'Service account',
+};
+
+type UserFormValues = { email: string; name: string; mobile: string; userType: UserType; password: string; roleId: string };
 
 const updateUserSchema: z.ZodType<UserFormValues> = z.object({
   email: z.string().email('Enter a valid email address.'),
   name: z.string().max(128),
   mobile: z.string().max(20),
+  userType: z.enum(userTypes),
   password: z.string().refine((value) => !value || isValidPassword(value), PASSWORD_REQUIREMENTS_MESSAGE),
   roleId: z.string().uuid('Select a role.'),
 });
@@ -20,10 +28,11 @@ const createUserSchema: z.ZodType<UserFormValues> = z.object({
   email: z.string().trim().min(1, 'Enter an email address.').email('Enter a valid email address.'),
   name: z.string().trim().min(1, 'Enter a name.').max(128),
   mobile: z.string().trim().min(1, 'Enter a mobile number.').max(20),
+  userType: z.enum(userTypes),
   password: z.string().min(1, 'Enter a password.').refine(isValidPassword, PASSWORD_REQUIREMENTS_MESSAGE),
   roleId: z.string().uuid('Select a role.'),
 });
-const emptyValues: UserFormValues = { email: '', name: '', mobile: '', password: '', roleId: '' };
+const emptyValues: UserFormValues = { email: '', name: '', mobile: '', userType: 'REGULAR', password: '', roleId: '' };
 
 export function UsersPage() {
   const queryClient = useQueryClient();
@@ -38,13 +47,13 @@ export function UsersPage() {
 
   useEffect(() => {
     form.reset(editing && editing !== 'new'
-      ? { email: editing.email, name: editing.name ?? '', mobile: editing.mobile ?? '', password: '', roleId: editing.roles[0]?.id ?? '' }
+      ? { email: editing.email, name: editing.name ?? '', mobile: editing.mobile ?? '', userType: editing.userType, password: '', roleId: editing.roles[0]?.id ?? '' }
       : emptyValues);
   }, [editing, form]);
 
   const save = useMutation({
     mutationFn: (values: UserFormValues) => {
-      const payload: Record<string, unknown> = { email: values.email, name: values.name, mobile: values.mobile, roleIds: [values.roleId] };
+      const payload: Record<string, unknown> = { email: values.email, name: values.name, mobile: values.mobile, userType: values.userType, roleIds: [values.roleId] };
       if (values.password) payload.password = values.password;
       return editing === 'new' ? usersApi.create({ ...payload, password: values.password }) : usersApi.update(editing!.id, payload);
     },
@@ -84,9 +93,9 @@ export function UsersPage() {
         {users.isPending && <div className="p-3 text-body-secondary">Loading users…</div>}
         {users.isError && <div className="alert alert-danger m-3 mb-0">{users.error.message}</div>}
         {users.data && <table className="table table-hover text-nowrap mb-0">
-          <thead><tr><th>Name</th><th>Email</th><th>Roles</th><th>Status</th><th className="text-end">Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>User type</th><th>Roles</th><th>Status</th><th className="text-end">Actions</th></tr></thead>
           <tbody>{users.data.items.map((user) => <tr key={user.id}>
-            <td>{user.name || '—'}</td><td>{user.email}</td><td>{user.roles.map((role) => role.name).join(', ') || '—'}</td>
+            <td>{user.name || '—'}</td><td>{user.email}</td><td>{userTypeLabels[user.userType]}</td><td>{user.roles.map((role) => role.name).join(', ') || '—'}</td>
             <td><span className={`badge text-bg-${user.isActive ? 'success' : 'secondary'}`}>{user.isActive ? 'Active' : 'Inactive'}</span></td>
             <td className="text-end"><div className="d-flex justify-content-end align-items-center gap-2">
               <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(user)} aria-label={`Edit ${user.email}`} title="Edit user"><i className="bi bi-pencil" /></button>
@@ -133,14 +142,19 @@ function UserModal({ editing, form, roles, saving, onClose, onSave }: {
                 {form.formState.errors.mobile && <div className="invalid-feedback">{form.formState.errors.mobile.message}</div>}
               </div>
               <div className="col-md-6">
-                <label className="form-label" htmlFor="user-password">{editing === 'new' ? 'Password' : 'New password (optional)'}</label>
-                <input id="user-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" autoComplete="new-password" {...form.register('password')} />
-                {form.formState.errors.password && <div className="invalid-feedback">{form.formState.errors.password.message}</div>}
+                <label className="form-label" htmlFor="user-type">User type</label>
+                <select id="user-type" className={`form-select ${form.formState.errors.userType ? 'is-invalid' : ''}`} {...form.register('userType')}>{userTypes.map((userType) => <option key={userType} value={userType}>{userTypeLabels[userType]}</option>)}</select>
+                {form.formState.errors.userType && <div className="invalid-feedback">{form.formState.errors.userType.message}</div>}
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="user-role">Role</label>
                 <select id="user-role" className={`form-select ${form.formState.errors.roleId ? 'is-invalid' : ''}`} {...form.register('roleId')}><option value="">Select a role</option>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}</select>
                 {form.formState.errors.roleId && <div className="invalid-feedback">{form.formState.errors.roleId.message}</div>}
+              </div>
+              <div className="col-12">
+                <label className="form-label" htmlFor="user-password">{editing === 'new' ? 'Password' : 'New password (optional)'}</label>
+                <input id="user-password" className={`form-control ${form.formState.errors.password ? 'is-invalid' : ''}`} type="password" autoComplete="new-password" {...form.register('password')} />
+                {form.formState.errors.password && <div className="invalid-feedback">{form.formState.errors.password.message}</div>}
               </div>
             </div>
           </div>

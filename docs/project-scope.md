@@ -75,6 +75,14 @@ Each role has a dedicated Role Details page with:
 - A read-only Role Information card for its metadata and status.
 - A Permissions card containing a module-wise, human-readable permission matrix. Administrators assign or remove permissions in this matrix and save them independently of role metadata.
 
+## User types
+
+Users have one account type in addition to their assigned roles and permissions:
+
+- `REGULAR`: a standard interactive user whose access is controlled by roles and permissions.
+- `SYSTEM_ADMINISTRATOR`: an unrestricted administrator account that bypasses normal role-permission checks. Only a System Administrator can create or manage this account type.
+- `SERVICE`: a non-human account type reserved for future integrations and background jobs. It currently uses roles and permissions like a regular account.
+
 ## Environment configuration
 
 The API and its migrations read only:
@@ -148,6 +156,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added a React login page and authenticated dashboard shell.
 - [x] Added protected user-management APIs for listing, creating, updating, and deactivating users.
 - [x] Added user activation and deactivation actions.
+- [x] Added persisted Regular, System Administrator, and Service user types, including System Administrator authorization bypass and protected management rules.
 - [x] Added protected role lookup for user-role assignment.
 - [x] Added the React user-management screen with search, pagination, create, edit, role selection, and deactivation actions.
 - [x] Added protected role-management APIs for listing, creating, editing, and deactivating roles.

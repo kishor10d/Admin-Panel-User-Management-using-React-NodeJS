@@ -39,10 +39,14 @@ async function seed() {
     admin = await userRepository.save(userRepository.create({
       email,
       name: 'System Administrator',
+      userType: 'SYSTEM_ADMINISTRATOR',
       passwordHash: await bcrypt.hash(adminPassword, 12),
       isActive: true,
       mustChangePassword: true,
     }));
+  } else if (admin.userType !== 'SYSTEM_ADMINISTRATOR') {
+    admin.userType = 'SYSTEM_ADMINISTRATOR';
+    admin = await userRepository.save(admin);
   }
 
   const userRole = await userRoleRepository.findOne({ where: { userId: admin.id, roleId: adminRole.id } });

@@ -5,6 +5,7 @@ export interface CurrentUser {
   email: string;
   name: string | null;
   mobile: string | null;
+  userType: 'REGULAR' | 'SYSTEM_ADMINISTRATOR' | 'SERVICE';
   roles: string[];
   permissions: string[];
 }

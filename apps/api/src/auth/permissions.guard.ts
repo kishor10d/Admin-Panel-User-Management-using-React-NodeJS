@@ -11,6 +11,7 @@ export class PermissionsGuard implements CanActivate {
     const required = this.reflector.getAllAndOverride<string[]>(REQUIRED_PERMISSIONS, [context.getHandler(), context.getClass()]) ?? [];
     if (!required.length) return true;
     const user = context.switchToHttp().getRequest<AuthenticatedRequest>().currentUser;
+    if (user?.userType === 'SYSTEM_ADMINISTRATOR') return true;
     if (!user || !required.every((permission) => user.permissions.includes(permission))) {
       throw new ForbiddenException('You do not have permission to perform this action.');
     }

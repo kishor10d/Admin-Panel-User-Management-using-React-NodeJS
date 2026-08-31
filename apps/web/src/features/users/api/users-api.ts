@@ -1,8 +1,9 @@
 import { apiRequest, createQueryString } from '../../../lib/api-client';
 
 export interface RoleOption { id: string; name: string; description: string | null; isActive: boolean; }
+export type UserType = 'REGULAR' | 'SYSTEM_ADMINISTRATOR' | 'SERVICE';
 export interface ManagedUser {
-  id: string; email: string; name: string | null; mobile: string | null; isActive: boolean;
+  id: string; email: string; name: string | null; mobile: string | null; userType: UserType; isActive: boolean;
   mustChangePassword: boolean; roles: Array<{ id: string; name: string }>;
   createdAt: string; updatedAt: string;
 }

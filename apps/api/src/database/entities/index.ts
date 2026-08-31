@@ -1,4 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import type { UserType } from '../../common/user-type';
 import { BaseEntity } from './base.entity';
 
 @Entity('roles')
@@ -51,6 +52,9 @@ export class User extends BaseEntity {
 
   @Column({ type: 'varchar', length: 20, nullable: true })
   mobile!: string | null;
+
+  @Column({ name: 'user_type', type: 'varchar', length: 32, default: 'REGULAR' })
+  userType!: UserType;
 
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;

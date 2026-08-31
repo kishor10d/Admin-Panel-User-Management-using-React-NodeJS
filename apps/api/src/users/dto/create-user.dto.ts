@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsEmail, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
+import { ArrayMinSize, IsArray, IsEmail, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
 import { PASSWORD_PATTERN, PASSWORD_REQUIREMENTS_MESSAGE } from '../../common/password-policy';
+import { USER_TYPES, type UserType } from '../../common/user-type';
 
 export class CreateUserDto {
   @IsEmail()
@@ -22,6 +23,10 @@ export class CreateUserDto {
   @IsString()
   @MaxLength(20)
   mobile?: string;
+
+  @IsOptional()
+  @IsIn(USER_TYPES)
+  userType?: UserType;
 
   @IsArray()
   @ArrayMinSize(1)

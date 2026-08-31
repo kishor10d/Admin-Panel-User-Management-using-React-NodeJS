@@ -20,25 +20,25 @@ export class UsersController {
 
   @Post()
   @RequirePermissions('users.create')
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(@Body() dto: CreateUserDto, @Req() request: AuthenticatedRequest) {
+    return this.usersService.create(dto, request.currentUser!);
   }
 
   @Patch(':id')
   @RequirePermissions('users.update')
   update(@Param('id') id: string, @Body() dto: UpdateUserDto, @Req() request: AuthenticatedRequest) {
-    return this.usersService.update(id, dto, request.currentUser!.id);
+    return this.usersService.update(id, dto, request.currentUser!);
   }
 
   @Patch(':id/deactivate')
   @RequirePermissions('users.delete')
   deactivate(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
-    return this.usersService.deactivate(id, request.currentUser!.id);
+    return this.usersService.deactivate(id, request.currentUser!);
   }
 
   @Patch(':id/activate')
   @RequirePermissions('users.update')
   activate(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
-    return this.usersService.activate(id, request.currentUser!.id);
+    return this.usersService.activate(id, request.currentUser!);
   }
 }

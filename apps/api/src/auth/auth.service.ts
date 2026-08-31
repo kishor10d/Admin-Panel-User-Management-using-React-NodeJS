@@ -56,6 +56,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       mobile: user.mobile,
+      userType: user.userType,
       roles: roles.map((role) => role.name),
       permissions: permissions.map((permission) => permission.key),
     };
