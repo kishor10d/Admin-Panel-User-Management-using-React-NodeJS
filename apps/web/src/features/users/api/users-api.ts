@@ -16,4 +16,5 @@ export const usersApi = {
   create: (data: Record<string, unknown>) => apiRequest<ManagedUser>('/users', json(data)),
   update: (id: string, data: Record<string, unknown>) => apiRequest<ManagedUser>(`/users/${id}`, { ...json(data), method: 'PATCH' }),
   deactivate: (id: string) => apiRequest<ManagedUser>(`/users/${id}/deactivate`, { method: 'PATCH' }),
+  activate: (id: string) => apiRequest<ManagedUser>(`/users/${id}/activate`, { method: 'PATCH' }),
 };

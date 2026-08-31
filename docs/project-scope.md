@@ -147,6 +147,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 - [x] Added reusable access-token and permission guard foundations for protected API routes.
 - [x] Added a React login page and authenticated dashboard shell.
 - [x] Added protected user-management APIs for listing, creating, updating, and deactivating users.
+- [x] Added user activation and deactivation actions.
 - [x] Added protected role lookup for user-role assignment.
 - [x] Added the React user-management screen with search, pagination, create, edit, role selection, and deactivation actions.
 - [x] Added protected role-management APIs for listing, creating, editing, and deactivating roles.
@@ -177,7 +178,7 @@ The Vite web port is configured in `apps/web/vite.config.ts`. The API normally u
 
 ### User and role management
 
-- [ ] Add a user restore action and a permanent deletion policy, if required.
+- [ ] Define a permanent user-deletion policy, if required.
 - [ ] Enforce permissions on every protected API route and hide unavailable UI controls.
 
 ### Application foundation

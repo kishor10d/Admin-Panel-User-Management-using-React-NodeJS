@@ -35,4 +35,10 @@ export class UsersController {
   deactivate(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
     return this.usersService.deactivate(id, request.currentUser!.id);
   }
+
+  @Patch(':id/activate')
+  @RequirePermissions('users.update')
+  activate(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
+    return this.usersService.activate(id, request.currentUser!.id);
+  }
 }

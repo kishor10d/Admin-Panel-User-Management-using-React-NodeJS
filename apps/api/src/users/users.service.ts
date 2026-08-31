@@ -75,6 +75,10 @@ export class UsersService {
     return this.update(id, { isActive: false }, actingUserId);
   }
 
+  async activate(id: string, actingUserId: string) {
+    return this.update(id, { isActive: true }, actingUserId);
+  }
+
   private async assertRolesExist(roleIds: string[]) {
     const uniqueRoleIds = [...new Set(roleIds)];
     const roles = await this.roles.findBy({ id: In(uniqueRoleIds), isActive: true });

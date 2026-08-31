@@ -63,6 +63,14 @@ export function UsersPage() {
     },
     onError: (error) => toast.error(error.message),
   });
+  const activate = useMutation({
+    mutationFn: usersApi.activate,
+    onSuccess: (user) => {
+      toast.success(`${user.email} was activated.`);
+      refresh();
+    },
+    onError: (error) => toast.error(error.message),
+  });
   const onSearch = (value: string) => {
     setSearch(value);
     setPage(1);
@@ -83,6 +91,7 @@ export function UsersPage() {
             <td className="text-end"><div className="d-flex justify-content-end align-items-center gap-2">
               <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(user)} aria-label={`Edit ${user.email}`} title="Edit user"><i className="bi bi-pencil" /></button>
               {user.isActive && <button className="btn btn-outline-danger btn-sm" disabled={deactivate.isPending} onClick={() => { if (window.confirm(`Deactivate ${user.email}?`)) deactivate.mutate(user.id); }} aria-label={`Deactivate ${user.email}`} title="Deactivate user"><i className="bi bi-trash" /></button>}
+              {!user.isActive && <button className="btn btn-outline-success btn-sm" disabled={activate.isPending} onClick={() => { if (window.confirm(`Activate ${user.email}?`)) activate.mutate(user.id); }} aria-label={`Activate ${user.email}`} title="Activate user"><i className="bi bi-arrow-counterclockwise" /></button>}
             </div></td>
           </tr>)}</tbody>
         </table>}
