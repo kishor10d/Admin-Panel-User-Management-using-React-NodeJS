@@ -5,6 +5,7 @@ import type { AuthUser } from './auth-user.type';
 
 export interface AuthenticatedRequest extends Request {
   currentUser?: AuthUser;
+  sessionId?: string;
 }
 
 @Injectable()
@@ -15,7 +16,9 @@ export class AccessTokenGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = request.cookies?.access_token;
     if (!token || typeof token !== 'string') throw new UnauthorizedException();
-    request.currentUser = await this.authService.verifyAccessToken(token);
+    const verified = await this.authService.verifyAccessToken(token);
+    request.currentUser = verified.user;
+    request.sessionId = verified.sessionId;
     return true;
   }
 }

@@ -6,6 +6,7 @@ export interface AuthUser {
   name: string | null;
   mobile: string | null;
   userType: UserType;
+  mustChangePassword: boolean;
   roles: string[];
   permissions: string[];
 }
@@ -13,4 +14,5 @@ export interface AuthUser {
 export interface JwtPayload {
   sub: string;
   email: string;
+  sid: string;
 }

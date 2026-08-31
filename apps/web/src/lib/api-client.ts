@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -16,9 +16,33 @@ export const httpClient = axios.create({
   headers: { Accept: 'application/json' },
 });
 
+httpClient.interceptors.request.use((config) => {
+  if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+    const csrfToken = getCookie('csrf_token');
+    if (csrfToken) config.headers.set('x-csrf-token', csrfToken);
+  }
+  return config;
+});
+
 httpClient.interceptors.response.use(
   (response) => response,
-  (error: unknown) => Promise.reject(normalizeApiError(error)),
+  async (error: unknown) => {
+    if (error instanceof AxiosError) {
+      const request = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+      const status = error.response?.status;
+      const canRefresh = request?.url === '/auth/me' || !request?.url?.startsWith('/auth/');
+      if (status === 401 && request && !request._retry && canRefresh) {
+        request._retry = true;
+        try {
+          await httpClient.post('/auth/refresh');
+          return httpClient.request(request);
+        } catch {
+          // The original request below supplies the user-facing error.
+        }
+      }
+    }
+    return Promise.reject(normalizeApiError(error));
+  },
 );
 
 export async function apiRequest<T>(path: string, config?: AxiosRequestConfig): Promise<T> {
@@ -53,4 +77,10 @@ function normalizeApiError(error: unknown): ApiError {
   }
 
   return new ApiError('Something went wrong. Please try again.', 0);
+}
+
+function getCookie(name: string) {
+  if (typeof document === 'undefined') return undefined;
+  const prefix = `${encodeURIComponent(name)}=`;
+  return document.cookie.split('; ').find((item) => item.startsWith(prefix))?.slice(prefix.length);
 }

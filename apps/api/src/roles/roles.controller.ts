@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard } from '../auth/access-token.guard';
+import { CsrfGuard } from '../auth/csrf.guard';
+import { PasswordChangeRequiredGuard } from '../auth/password-change-required.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { RequirePermissions } from '../auth/require-permissions.decorator';
 import { RolesService } from './roles.service';
@@ -9,7 +11,7 @@ import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
 import { ListRolesQueryDto } from './dto/list-roles-query.dto';
 
 @Controller('roles')
-@UseGuards(AccessTokenGuard, PermissionsGuard)
+@UseGuards(AccessTokenGuard, CsrfGuard, PasswordChangeRequiredGuard, PermissionsGuard)
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 

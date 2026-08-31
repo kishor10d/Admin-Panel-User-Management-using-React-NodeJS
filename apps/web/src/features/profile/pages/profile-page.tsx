@@ -30,6 +30,10 @@ export function ProfilePage() {
     if (currentUser.data) form.reset(toFormValues(currentUser.data.user));
   }, [currentUser.data, form]);
 
+  useEffect(() => {
+    if (currentUser.data?.user.mustChangePassword) setActiveTab('password');
+  }, [currentUser.data?.user.mustChangePassword]);
+
   const saveProfile = useMutation({
     mutationFn: (values: ProfileValues) => authApi.updateProfile(values),
     onSuccess: ({ user }) => {
@@ -67,9 +71,9 @@ export function ProfilePage() {
         <section className="card">
           <div className="card-header p-0 border-bottom-0">
             <ul className="nav nav-tabs" role="tablist">
-              <li className="nav-item" role="presentation">
+              {!user.mustChangePassword && <li className="nav-item" role="presentation">
                 <button className={`nav-link ${activeTab === 'information' ? 'active' : ''}`} id="information-tab" type="button" role="tab" aria-controls="information" aria-selected={activeTab === 'information'} onClick={() => setTab('information')}>Admin Information</button>
-              </li>
+              </li>}
               <li className="nav-item" role="presentation">
                 <button className={`nav-link ${activeTab === 'password' ? 'active' : ''}`} id="password-tab" type="button" role="tab" aria-controls="password" aria-selected={activeTab === 'password'} onClick={() => setTab('password')}>Change Password</button>
               </li>
@@ -77,7 +81,7 @@ export function ProfilePage() {
           </div>
           <div className="card-body">
             <div className="tab-content">
-              {activeTab === 'information' && <div className="tab-pane fade show active" id="information" role="tabpanel" aria-labelledby="information-tab">
+              {activeTab === 'information' && !user.mustChangePassword && <div className="tab-pane fade show active" id="information" role="tabpanel" aria-labelledby="information-tab">
                 <form className="row g-3" onSubmit={form.handleSubmit((values) => saveProfile.mutate(values))}>
                   <div className="col-md-6">
                     <label className="form-label" htmlFor="profile-name">Full name</label>
@@ -104,7 +108,7 @@ export function ProfilePage() {
                   </div>
                 </form>
               </div>}
-              {activeTab === 'password' && <div className="tab-pane fade show active" id="password" role="tabpanel" aria-labelledby="password-tab"><ChangePasswordForm /></div>}
+              {activeTab === 'password' && <div className="tab-pane fade show active" id="password" role="tabpanel" aria-labelledby="password-tab">{user.mustChangePassword && <div className="alert alert-warning">You must set a new password before continuing.</div>}<ChangePasswordForm /></div>}
             </div>
           </div>
         </section>

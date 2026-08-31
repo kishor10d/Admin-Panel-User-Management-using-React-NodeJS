@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard, type AuthenticatedRequest } from '../auth/access-token.guard';
+import { CsrfGuard } from '../auth/csrf.guard';
+import { PasswordChangeRequiredGuard } from '../auth/password-change-required.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { RequirePermissions } from '../auth/require-permissions.decorator';
 import { RequireAnyPermissions } from '../auth/require-any-permissions.decorator';
@@ -9,7 +11,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 
 @Controller('users')
-@UseGuards(AccessTokenGuard, PermissionsGuard)
+@UseGuards(AccessTokenGuard, CsrfGuard, PasswordChangeRequiredGuard, PermissionsGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

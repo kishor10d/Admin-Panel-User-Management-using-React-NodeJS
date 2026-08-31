@@ -55,6 +55,7 @@ function AuthenticatedApp() {
 
   if (currentUser.isPending) return <main className="min-vh-100 d-flex align-items-center justify-content-center bg-body-secondary">Loading CIAS Admin…</main>;
   if (currentUser.isError) return location.pathname === '/' ? <LoginPage /> : <Navigate to="/" replace />;
+  if (currentUser.data.user.mustChangePassword && location.pathname !== '/profile') return <Navigate to="/profile" replace />;
 
   return <Routes><Route element={<AppLayout user={currentUser.data.user} />}><Route index element={<DashboardPage />} /><Route path="access-denied" element={<AccessDeniedPage />} /><Route element={<PermissionGate permission="users.read" />}><Route path="users" element={<UsersPage />} /></Route><Route element={<PermissionGate permission="roles.read" />}><Route path="roles" element={<RolesPage />} /><Route path="roles/:roleId" element={<RoleDetailsPage />} /></Route><Route element={<PermissionGate permission="login-history.read" />}><Route path="login-history" element={<LoginHistoryPage />} /></Route><Route path="profile" element={<ProfilePage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>;
 }

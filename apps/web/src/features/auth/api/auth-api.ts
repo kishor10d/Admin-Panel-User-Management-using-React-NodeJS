@@ -6,6 +6,7 @@ export interface CurrentUser {
   name: string | null;
   mobile: string | null;
   userType: 'REGULAR' | 'SYSTEM_ADMINISTRATOR' | 'SERVICE';
+  mustChangePassword: boolean;
   roles: string[];
   permissions: string[];
 }
@@ -17,10 +18,12 @@ const json = (data: unknown, method = 'POST') => ({
 });
 
 export const authApi = {
+  csrf: () => apiRequest<void>('/auth/csrf'),
   me: () => apiRequest<{ user: CurrentUser }>('/auth/me'),
   updateProfile: (data: Pick<CurrentUser, 'email' | 'name' | 'mobile'>) => apiRequest<{ user: CurrentUser }>('/auth/profile', json(data, 'PATCH')),
   login: (email: string, password: string) => apiRequest<{ user: CurrentUser }>('/auth/login', json({ email, password })),
   logout: () => apiRequest<void>('/auth/logout', { method: 'POST' }),
+  refresh: () => apiRequest<{ user: CurrentUser }>('/auth/refresh', { method: 'POST' }),
   changePassword: (currentPassword: string, newPassword: string) => apiRequest<void>('/auth/change-password', json({ currentPassword, newPassword })),
   forgotPassword: (email: string) => apiRequest<void>('/auth/forgot-password', json({ email })),
   resetPassword: (token: string, password: string) => apiRequest<void>('/auth/reset-password', json({ token, password })),

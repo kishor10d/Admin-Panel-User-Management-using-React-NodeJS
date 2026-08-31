@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
@@ -14,6 +14,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const queryClient = useQueryClient();
+  const csrf = useQuery({ queryKey: ['auth', 'csrf'], queryFn: authApi.csrf, staleTime: Infinity });
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
   const login = useMutation({
     mutationFn: ({ email, password }: LoginValues) => authApi.login(email, password),
@@ -39,7 +40,7 @@ export function LoginPage() {
               {form.formState.errors.password && <div className="invalid-feedback d-block">{form.formState.errors.password.message}</div>}
             </div>
             <div className="row">
-              <div className="col-12"><button className="btn btn-primary w-100" type="submit" disabled={login.isPending}>{login.isPending ? 'Signing in…' : 'Sign In'}</button></div>
+              <div className="col-12"><button className="btn btn-primary w-100" type="submit" disabled={login.isPending || csrf.isPending}>{login.isPending ? 'Signing in…' : 'Sign In'}</button></div>
             </div>
           </form>
           <p className="mb-1 mt-3"><Link to="/forgot-password">I forgot my password</Link></p>

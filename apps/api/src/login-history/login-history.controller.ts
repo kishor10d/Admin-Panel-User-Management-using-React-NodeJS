@@ -1,12 +1,13 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AccessTokenGuard } from '../auth/access-token.guard';
+import { PasswordChangeRequiredGuard } from '../auth/password-change-required.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { RequirePermissions } from '../auth/require-permissions.decorator';
 import { ListLoginEventsQueryDto } from './dto/list-login-events-query.dto';
 import { LoginHistoryService } from './login-history.service';
 
 @Controller('login-history')
-@UseGuards(AccessTokenGuard, PermissionsGuard)
+@UseGuards(AccessTokenGuard, PasswordChangeRequiredGuard, PermissionsGuard)
 export class LoginHistoryController {
   constructor(private readonly loginHistoryService: LoginHistoryService) {}
 

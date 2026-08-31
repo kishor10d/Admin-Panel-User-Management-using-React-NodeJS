@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { authApi } from '../api/auth-api';
@@ -16,8 +16,9 @@ type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 
 export function ChangePasswordForm() {
   const form = useForm<ChangePasswordValues>({ resolver: zodResolver(changePasswordSchema) });
+  const queryClient = useQueryClient();
   const toast = useToast();
-  const submit = useMutation({ mutationFn: ({ currentPassword, password }: ChangePasswordValues) => authApi.changePassword(currentPassword, password), onSuccess: () => { form.reset(); toast.success('Password updated successfully.'); }, onError: (error) => toast.error(error.message) });
+  const submit = useMutation({ mutationFn: ({ currentPassword, password }: ChangePasswordValues) => authApi.changePassword(currentPassword, password), onSuccess: () => { form.reset(); queryClient.invalidateQueries({ queryKey: ['auth', 'me'] }); toast.success('Password updated successfully.'); }, onError: (error) => toast.error(error.message) });
   return <form onSubmit={form.handleSubmit((values) => submit.mutate(values))}><PasswordField id="current-password" label="Current password" error={form.formState.errors.currentPassword?.message} autoComplete="current-password" registration={form.register('currentPassword')} /><PasswordField id="new-password" label="New password" error={form.formState.errors.password?.message} registration={form.register('password')} /><PasswordField id="confirm-new-password" label="Confirm new password" error={form.formState.errors.confirmPassword?.message} registration={form.register('confirmPassword')} /><div className="text-end"><button className="btn btn-primary" type="submit" disabled={submit.isPending}>{submit.isPending ? 'Updating…' : 'Update password'}</button></div></form>;
 }
 

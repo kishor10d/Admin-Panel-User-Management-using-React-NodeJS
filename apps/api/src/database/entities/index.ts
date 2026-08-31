@@ -61,6 +61,12 @@ export class User extends BaseEntity {
 
   @Column({ name: 'must_change_password', default: false })
   mustChangePassword!: boolean;
+
+  @Column({ name: 'failed_login_attempts', default: 0 })
+  failedLoginAttempts!: number;
+
+  @Column({ name: 'locked_until', type: 'datetime', nullable: true })
+  lockedUntil!: Date | null;
 }
 
 @Entity('user_roles')
@@ -92,6 +98,28 @@ export class PasswordResetToken extends BaseEntity {
   usedAt!: Date | null;
 }
 
+@Entity('auth_sessions')
+export class AuthSession extends BaseEntity {
+  @Column({ name: 'user_id', type: 'char', length: 36 })
+  userId!: string;
+
+  @Index({ unique: true })
+  @Column({ name: 'refresh_token_hash', length: 255 })
+  refreshTokenHash!: string;
+
+  @Column({ name: 'expires_at', type: 'datetime' })
+  expiresAt!: Date;
+
+  @Column({ name: 'revoked_at', type: 'datetime', nullable: true })
+  revokedAt!: Date | null;
+
+  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
+  ipAddress!: string | null;
+
+  @Column({ name: 'user_agent', type: 'varchar', length: 512, nullable: true })
+  userAgent!: string | null;
+}
+
 @Entity('login_events')
 export class LoginEvent extends BaseEntity {
   @Column({ name: 'user_id', type: 'char', length: 36, nullable: true })
@@ -110,4 +138,4 @@ export class LoginEvent extends BaseEntity {
   successful!: boolean;
 }
 
-export const entities = [Role, Permission, RolePermission, User, UserRole, PasswordResetToken, LoginEvent];
+export const entities = [Role, Permission, RolePermission, User, UserRole, PasswordResetToken, AuthSession, LoginEvent];
